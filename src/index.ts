@@ -1,4 +1,13 @@
-import { z } from "zod";
+import {
+  Analytics,
+  analyticsSchema,
+  Logs,
+  logsSchema,
+  Metrics,
+  metricsSchema,
+  Traces,
+  tracesSchema,
+} from "./schema";
 
 export interface Env {
   // Secrets
@@ -9,17 +18,6 @@ export interface Env {
   ALLOWED_ORIGINS: string[];
   TELEGRAF_URL: string;
 }
-
-const analyticsSchema = z.discriminatedUnion("type", [
-  z.object({
-    type: z.literal("page_view"),
-    path: z.string(),
-  }),
-]);
-
-const logsSchema = z.object({
-  service: z.enum(["raft"]),
-});
 
 export default {
   async fetch(
@@ -61,6 +59,26 @@ export default {
       ctx.waitUntil(work);
 
       return new Response("Unimplemented", { status: 501 });
+    } else if (url.pathname === "/t") {
+      const result = tracesSchema.safeParse(params);
+      if (!result.success) {
+        return new Response("Bad data", { status: 400 });
+      }
+
+      const work = traces(env, result.data);
+      ctx.waitUntil(work);
+
+      return new Response("Unimplemented", { status: 501 });
+    } else if (url.pathname === "/m") {
+      const result = metricsSchema.safeParse(params);
+      if (!result.success) {
+        return new Response("Bad data", { status: 400 });
+      }
+
+      const work = metrics(env, result.data);
+      ctx.waitUntil(work);
+
+      return new Response("Unimplemented", { status: 501 });
     } else {
       return new Response("Bad route", { status: 400 });
     }
@@ -81,7 +99,7 @@ async function analytics(
   ip: string,
   userAgent: string,
   country: string,
-  data: z.infer<typeof analyticsSchema>
+  data: Analytics
 ): Promise<void> {
   const encoder = new TextEncoder();
   const today = new Date();
@@ -110,10 +128,11 @@ async function analytics(
   );
 }
 
-async function logs(
-  env: Env,
-  data: z.infer<typeof logsSchema>
-): Promise<void> {}
+async function logs(env: Env, data: Logs): Promise<void> {}
+
+async function traces(env: Env, data: Traces): Promise<void> {}
+
+async function metrics(env: Env, data: Metrics): Promise<void> {}
 
 function telegraf(env: Env, body: string) {
   return fetch(env.TELEGRAF_URL, {

@@ -1,0 +1,7 @@
+name = "ingest-worker"
+main = "src/index.ts"
+compatibility_date = "2023-02-19"
+
+[vars]
+ALLOWED_ORIGINS = ["https://dietcode.io"]
+TELEGRAF_URL = "https://telegraf.sdnts.dev/api/v2/write?precision=ms"

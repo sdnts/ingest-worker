@@ -25,6 +25,11 @@ export default {
     env: Env,
     ctx: ExecutionContext
   ): Promise<Response> {
+    const url = new URL(request.url);
+    if (url.pathname === "/p") {
+      return new Response("OK", { status: 200 });
+    }
+
     if (request.method !== "POST") {
       return new Response("Bad method", { status: 400 });
     }
@@ -34,7 +39,6 @@ export default {
       return new Response("Bad origin", { status: 400 });
     }
 
-    const url = new URL(request.url);
     const params = await request.json();
 
     if (url.pathname === "/a") {

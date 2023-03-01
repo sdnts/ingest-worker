@@ -126,9 +126,9 @@ async function analytics(
 
   await telegraf(
     env,
-    `${data.type},bucket=analytics,site=${origin},visitor=${visitorId} path="${
+    `${data.type},bucket=analytics,site=${origin} path="${
       data.path
-    }",location="${country}" ${today.getTime()}`
+    },visitor="${visitorId}",location="${country}" ${today.getTime()}`
   );
 }
 

@@ -12,3 +12,6 @@ ingest-worker/node_modules
 infra/terraform/.terraform/*
 infra/terraform/*.tfstate
 infra/terraform/*.tfstate.*
+
+infra/docker/volumes/caddy/data
+infra/docker/volumes/loki/data

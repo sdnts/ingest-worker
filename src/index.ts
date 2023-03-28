@@ -113,7 +113,7 @@ async function analytics(
    * We don't log their IPs / UserAgents, but we do use them to calculate their IDs.
    * Visitor IDs let us determine uniqueness.
    *
-   * This is exactly the strategy Plausible uses, and is a great balance between
+   * This is also the strategy Plausible uses, and is a great balance between
    * usefulness and privacy.
    */
   const visitorDigest = await crypto.subtle.digest(
@@ -124,11 +124,11 @@ async function analytics(
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 
-  await telegraf(
+  await ship(
     env,
-    `${data.type},bucket=analytics,site=${origin} path="${
-      data.path
-    },visitor="${visitorId}",location="${country}" ${today.getTime()}`
+    data.type,
+    { bucket: "analytics", site: origin },
+    { path: data.path, visitor: visitorId, location: country }
   );
 }
 
@@ -138,13 +138,38 @@ async function traces(env: Env, data: Traces): Promise<void> {}
 
 async function metrics(env: Env, data: Metrics): Promise<void> {}
 
-function telegraf(env: Env, body: string) {
+/**
+ * Ships a measurement value to Sinope. Formats measurement into the InfluxDB
+ * Line Protocol before shipping.
+ *
+ * @param env
+ * @param measurement Name of the measurement
+ * @param tags
+ * @param fields
+ */
+function ship(
+  env: Env,
+  measurement: string,
+  tags: Record<string, string>,
+  fields: Record<string, string>
+) {
+  const t = Object.entries(tags)
+    .map(([k, v]) => `${k}=${v}`)
+    .join(",");
+  const f = Object.entries(fields)
+    .map(([k, v]) => {
+      if (typeof v === "string") return `${k}="${v}"`;
+      return `${k}=${v}`;
+    })
+    .join(",");
+  const today = new Date();
+
   return fetch(env.TELEGRAF_URL, {
     method: "POST",
     headers: {
       "cf-access-client-id": env.ACCESS_CLIENT_ID,
       "cf-access-client-secret": env.ACCESS_CLIENT_SECRET,
     },
-    body,
+    body: `${measurement},${t} ${f} ${today.getTime()}`,
   });
 }

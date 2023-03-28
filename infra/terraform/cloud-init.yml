@@ -1,0 +1,77 @@
+#cloud-config
+
+locale: en_US
+ssh_pwauth: false
+disable_root: false
+users:
+  - name: sid
+    groups: users, sudo
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ${ssh_public_key}
+
+  - name: git
+    groups: users, sudo
+    ssh_authorized_keys:
+      - ${ssh_public_key}
+
+apt:
+  sources:
+    docker.list:
+      source: deb [arch=amd64] https://download.docker.com/linux/debian $RELEASE stable
+      keyid: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+
+package_update: true
+package_upgrade: true
+packages:
+  - unattended-upgrades
+  - fail2ban
+  - psmisc
+  - lsof
+  - vim
+  - ca-certificates
+  - curl
+  - gnupg
+  - apparmor
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+
+runcmd:
+  - dpkg-reconfigure -f noninteractive --priority=low unattended-upgrades
+  # Configure fail2ban
+  - printf "[sshd]" >> /etc/fail2ban/jail.local
+  - printf "enabled = true" >> /etc/fail2ban/jail.local
+  - printf "banaction = iptables-multiport" >> /etc/fail2ban/jail.local
+  # Set up docker-compose.service
+  - printf "[Unit]" >> /etc/systemd/system/docker-compose.service
+  - printf "Description=Docker Compose" >> /etc/systemd/system/docker-compose.service
+  - printf "Requires=docker.service" >> /etc/systemd/system/docker-compose.service
+  - printf "After=docker.service" >> /etc/systemd/system/docker-compose.service
+  - printf "" >> /etc/systemd/system/docker-compose.service
+  - printf "[Service]" >> /etc/systemd/system/docker-compose.service
+  - printf "Type=oneshot" >> /etc/systemd/system/docker-compose.service
+  - printf "RemainAfterExit=yes" >> /etc/systemd/system/docker-compose.service
+  - printf "WorkingDirectory=/srv/git/olly/docker" >> /etc/systemd/system/docker-compose.service
+  - printf "ExecStart=/usr/local/bin/docker-compose up -d" >> /etc/systemd/system/docker-compose.service
+  - printf "ExecStop=/usr/local/bin/docker-compose down" >> /etc/systemd/system/docker-compose.service
+  - printf "TimeoutStartSec=0" >> /etc/systemd/system/docker-compose.service
+  - printf "" >> /etc/systemd/system/docker-compose.service
+  - printf "[Install]" >> /etc/systemd/system/docker-compose.service
+  - printf "WantedBy=multi-user.target" >> /etc/systemd/system/docker-compose.service
+  # Set up Git server
+  - mkdir /srv/git && cd /srv/git
+  - mkdir olly.git && cd olly.git
+  - git init --bare
+  - printf "#!/bin/sh" >> .git/hooks/post-receive
+  - printf "exec sudo docker-compose up -d" >> .git/hooks/post-receive
+  - cd ~
+  # Enable Services
+  - systemctl enable fail2ban
+  - systemctl enable docker.service
+  - systemctl enable containerd.service
+  - systemctl enable docker-compose.service
+  - reboot

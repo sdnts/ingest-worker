@@ -1,17 +1,10 @@
 .DS_Store
 
-ingest-worker/.yarn/*
-!ingest-worker/.yarn/patches
-!ingest-worker/.yarn/plugins
-!ingest-worker/.yarn/releases
-!ingest-worker/.yarn/sdks
-!ingest-worker/.yarn/versions
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
 
-ingest-worker/node_modules
-
-terraform/.terraform/*
-terraform/*.tfstate
-terraform/*.tfstate.*
-
-docker/volumes/caddy/data
-docker/volumes/loki/data
+node_modules

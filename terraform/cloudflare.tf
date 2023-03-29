@@ -28,7 +28,7 @@ data "cloudflare_access_identity_provider" "github" {
 ////////////////////////////////
 
 resource "cloudflare_record" "records" {
-  for_each = toset(["git.olly", "influxdb.olly", "loki.olly", "telegraf.olly", "grafana.olly"])
+  for_each = toset(["influxdb-o", "loki-o", "telegraf-o", "grafana-o"])
   zone_id  = var.cloudflare.zone_id
   name     = each.key
   type     = "A"
@@ -41,7 +41,7 @@ resource "cloudflare_record" "records" {
 resource "cloudflare_access_application" "influxdb" {
   zone_id                   = var.cloudflare.zone_id
   name                      = "[Olly] InfluxDB"
-  domain                    = "influxdb.olly.sdnts.dev"
+  domain                    = "influxdb-o.sdnts.dev"
   type                      = "self_hosted"
   allowed_idps              = [data.cloudflare_access_identity_provider.github.id]
   auto_redirect_to_identity = true
@@ -55,7 +55,7 @@ resource "cloudflare_access_policy" "influxdb" {
   name           = "GitHub"
   decision       = "allow"
   include {
-    email        = ["siddhant@fastmail.com"]
+    email        = [var.email]
     login_method = ["GitHub"]
   }
 }
@@ -64,7 +64,7 @@ resource "cloudflare_access_policy" "influxdb" {
 resource "cloudflare_access_application" "grafana" {
   zone_id                   = var.cloudflare.zone_id
   name                      = "[Olly] Grafana"
-  domain                    = "grafana.olly.sdnts.dev"
+  domain                    = "grafana-o.sdnts.dev"
   type                      = "self_hosted"
   allowed_idps              = [data.cloudflare_access_identity_provider.github.id]
   auto_redirect_to_identity = true
@@ -87,7 +87,7 @@ resource "cloudflare_access_policy" "grafana" {
 resource "cloudflare_access_application" "telegraf" {
   zone_id          = var.cloudflare.zone_id
   name             = "[Olly] Telegraf"
-  domain           = "telegraf.olly.sdnts.dev"
+  domain           = "telegraf-o.sdnts.dev"
   type             = "self_hosted"
   session_duration = "24h"
   logo_url         = "https://portal.influxdata.com/assets/favicon-36b5b4080e5acaf2f320acc4e69292fed4f66815359e6a93d4a56e3dc1536c24.png"

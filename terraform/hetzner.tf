@@ -74,3 +74,7 @@ resource "hcloud_firewall" "firewall" {
 output "ip" {
   value = hcloud_server.olly.ipv4_address
 }
+
+output "git_origin" {
+  value = "git@${hcloud_server.olly.ipv4_address}:/srv/git/olly.git"
+}

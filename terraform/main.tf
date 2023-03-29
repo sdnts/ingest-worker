@@ -13,3 +13,7 @@ terraform {
     }
   }
 }
+
+variable "email" {
+  sensitive = true
+}

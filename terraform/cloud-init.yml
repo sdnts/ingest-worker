@@ -1,0 +1,83 @@
+#cloud-config
+
+locale: en_US
+ssh_pwauth: false
+disable_root: false
+users:
+  - name: sid
+    groups: users, sudo
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ${ssh_public_key}
+
+  - name: git
+    groups: users, sudo
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ${ssh_public_key}
+
+apt:
+  sources:
+    docker.list:
+      source: deb [arch=amd64] https://download.docker.com/linux/debian $RELEASE stable
+      keyid: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+
+package_update: true
+package_upgrade: true
+packages:
+  - git
+  - unattended-upgrades
+  - fail2ban
+  - psmisc
+  - lsof
+  - vim
+  - ca-certificates
+  - curl
+  - gnupg
+  - apparmor
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+
+runcmd:
+  - dpkg-reconfigure -f noninteractive --priority=low unattended-upgrades
+  # Configure fail2ban
+  - echo "[sshd]" >> /etc/fail2ban/jail.local
+  - echo "enabled = true" >> /etc/fail2ban/jail.local
+  - echo "banaction = iptables-multiport" >> /etc/fail2ban/jail.local
+  # Set up docker-compose.service
+  - echo "[Unit]" >> /etc/systemd/system/docker-compose.service
+  - echo "Description=Docker Compose" >> /etc/systemd/system/docker-compose.service
+  - echo "Requires=docker.service" >> /etc/systemd/system/docker-compose.service
+  - echo "After=docker.service" >> /etc/systemd/system/docker-compose.service
+  - echo "" >> /etc/systemd/system/docker-compose.service
+  - echo "[Service]" >> /etc/systemd/system/docker-compose.service
+  - echo "Type=oneshot" >> /etc/systemd/system/docker-compose.service
+  - echo "RemainAfterExit=yes" >> /etc/systemd/system/docker-compose.service
+  - echo "WorkingDirectory=/srv/olly/docker" >> /etc/systemd/system/docker-compose.service
+  - echo "ExecStart=/usr/bin/docker compose up -d" >> /etc/systemd/system/docker-compose.service
+  - echo "ExecStop=/usr/bin/docker compose down" >> /etc/systemd/system/docker-compose.service
+  - echo "TimeoutStartSec=0" >> /etc/systemd/system/docker-compose.service
+  - echo "" >> /etc/systemd/system/docker-compose.service
+  - echo "[Install]" >> /etc/systemd/system/docker-compose.service
+  - echo "WantedBy=multi-user.target" >> /etc/systemd/system/docker-compose.service
+  # Set up Git server
+  - mkdir /srv/git && cd /srv/git
+  - mkdir olly.git && cd olly.git
+  - git init --bare -b main
+  - git clone /srv/git/olly.git /srv/olly
+  - echo "#!/bin/sh" >> hooks/post-receive
+  - echo "exec cd /srv/olly" >> hooks/post-receive
+  - echo "exec git pull origin" >> hooks/post-receive
+  - echo "exec sudo docker-compose up -d" >> hooks/post-receive
+  - chown -R git /srv/git
+  - chown -R git /srv/olly
+  # Enable Services
+  - systemctl enable fail2ban
+  - systemctl enable docker.service
+  - systemctl enable containerd.service
+  - systemctl enable docker-compose.service
+  - reboot

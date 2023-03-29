@@ -9,9 +9,9 @@ ingest-worker/.yarn/*
 
 ingest-worker/node_modules
 
-infra/terraform/.terraform/*
-infra/terraform/*.tfstate
-infra/terraform/*.tfstate.*
+terraform/.terraform/*
+terraform/*.tfstate
+terraform/*.tfstate.*
 
-infra/docker/volumes/caddy/data
-infra/docker/volumes/loki/data
+docker/volumes/caddy/data
+docker/volumes/loki/data

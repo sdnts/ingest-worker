@@ -127,8 +127,8 @@ async function analytics(
   await ship(
     env,
     data.type,
-    { bucket: "analytics", site: origin },
-    { path: data.path, visitor: visitorId, location: country }
+    { bucket: "analytics", site: origin, path: data.path },
+    { visitor: visitorId, location: country }
   );
 }
 

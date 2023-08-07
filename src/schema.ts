@@ -1,9 +1,10 @@
 import { z } from "zod";
 
-export type Analytics = z.infer<typeof analyticsSchema>;
-export const analyticsSchema = z.discriminatedUnion("type", [
+export type Metrics = z.infer<typeof metricsSchema>;
+export const metricsSchema = z.discriminatedUnion("name", [
   z.object({
-    type: z.literal("page_view"),
+    name: z.literal("page_view"),
+    service: z.enum(["dietcode", "blob-city"]),
     path: z.string(),
   }),
 ]);
@@ -15,10 +16,5 @@ export const logsSchema = z.object({
 
 export type Traces = z.infer<typeof tracesSchema>;
 export const tracesSchema = z.object({
-  service: z.enum(["raft"]),
-});
-
-export type Metrics = z.infer<typeof metricsSchema>;
-export const metricsSchema = z.object({
   service: z.enum(["raft"]),
 });

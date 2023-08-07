@@ -1,11 +1,9 @@
 import {
-  Analytics,
-  analyticsSchema,
   Logs,
-  logsSchema,
   Metrics,
-  metricsSchema,
   Traces,
+  logsSchema,
+  metricsSchema,
   tracesSchema,
 } from "./schema";
 
@@ -41,17 +39,15 @@ export default {
 
     const params = await request.json();
 
-    if (url.pathname === "/a") {
-      const result = analyticsSchema.safeParse(params);
-      if (!result.success) {
-        return new Response("Bad data", { status: 400 });
-      }
+    if (url.pathname === "/m") {
+      const result = metricsSchema.safeParse(params);
+      if (!result.success) return new Response("Bad data", { status: 400 });
 
       const ip = request.headers.get("cf-connecting-ip") ?? "";
       const userAgent = request.headers.get("user-agent") ?? "";
       const country = request.headers.get("cf-ipcountry") ?? "unknown";
 
-      const work = analytics(env, origin, ip, userAgent, country, result.data);
+      const work = metrics(env, origin, ip, userAgent, country, result.data);
       ctx.waitUntil(work);
     } else if (url.pathname === "/l") {
       const result = logsSchema.safeParse(params);
@@ -73,16 +69,6 @@ export default {
       ctx.waitUntil(work);
 
       return new Response("Unimplemented", { status: 501 });
-    } else if (url.pathname === "/m") {
-      const result = metricsSchema.safeParse(params);
-      if (!result.success) {
-        return new Response("Bad data", { status: 400 });
-      }
-
-      const work = metrics(env, result.data);
-      ctx.waitUntil(work);
-
-      return new Response("Unimplemented", { status: 501 });
     } else {
       return new Response("Bad route", { status: 400 });
     }
@@ -97,13 +83,13 @@ export default {
   },
 };
 
-async function analytics(
+async function metrics(
   env: Env,
   origin: string,
   ip: string,
   userAgent: string,
   country: string,
-  data: Analytics
+  data: Metrics
 ): Promise<void> {
   const encoder = new TextEncoder();
   const today = new Date();
@@ -126,7 +112,7 @@ async function analytics(
 
   await ship(
     env,
-    data.type,
+    data.name,
     { bucket: "analytics", site: origin, path: data.path },
     { visitor: visitorId, location: country }
   );
@@ -135,8 +121,6 @@ async function analytics(
 async function logs(env: Env, data: Logs): Promise<void> {}
 
 async function traces(env: Env, data: Traces): Promise<void> {}
-
-async function metrics(env: Env, data: Metrics): Promise<void> {}
 
 /**
  * Ships a measurement value to Sinope. Formats measurement into the InfluxDB

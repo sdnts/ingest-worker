@@ -25,11 +25,12 @@ export default {
   ): Promise<Response> {
     const url = new URL(request.url);
 
-    if (url.pathname === "/p") return new Response("OK", { status: 200 });
+    if (url.pathname === "/p") return new Response("pong", { status: 200 });
 
     const origin = request.headers.get("Origin") ?? "";
-    if (!env.ALLOWED_ORIGINS.includes(origin))
+    if (!env.ALLOWED_ORIGINS.includes(origin)) {
       return new Response("Bad origin", { status: 400 });
+    }
 
     if (request.method === "OPTIONS") {
       return new Response(null, {
@@ -41,42 +42,45 @@ export default {
       });
     }
 
-    if (request.method !== "POST")
+    if (request.method !== "POST") {
       return new Response("Bad method", { status: 400 });
+    }
+
     const params = await request.json();
 
-    if (url.pathname === "/m") {
-      const result = metricsSchema.safeParse(params);
-      if (!result.success) return new Response("Bad data", { status: 400 });
+    switch (url.pathname) {
+      case "/m": {
+        const result = metricsSchema.safeParse(params);
+        if (!result.success) return new Response("Bad data", { status: 400 });
 
-      const ip = request.headers.get("cf-connecting-ip") ?? "";
-      const userAgent = request.headers.get("user-agent") ?? "";
-      const country = request.headers.get("cf-ipcountry") ?? "unknown";
+        const ip = request.headers.get("cf-connecting-ip") ?? "";
+        const userAgent = request.headers.get("user-agent") ?? "";
+        const country = request.headers.get("cf-ipcountry") ?? "unknown";
 
-      const work = metrics(env, origin, ip, userAgent, country, result.data);
-      ctx.waitUntil(work);
-    } else if (url.pathname === "/l") {
-      const result = logsSchema.safeParse(params);
-      if (!result.success) {
-        return new Response("Bad data", { status: 400 });
+        ctx.waitUntil(
+          metrics(env, origin, ip, userAgent, country, result.data)
+        );
+        break;
       }
 
-      const work = logs(env, result.data);
-      ctx.waitUntil(work);
+      case "/l": {
+        const result = logsSchema.safeParse(params);
+        if (!result.success) return new Response("Bad data", { status: 400 });
 
-      return new Response("Unimplemented", { status: 501 });
-    } else if (url.pathname === "/t") {
-      const result = tracesSchema.safeParse(params);
-      if (!result.success) {
-        return new Response("Bad data", { status: 400 });
+        ctx.waitUntil(logs(env, result.data));
+        return new Response("Unimplemented", { status: 501 });
       }
 
-      const work = traces(env, result.data);
-      ctx.waitUntil(work);
+      case "/t": {
+        const result = tracesSchema.safeParse(params);
+        if (!result.success) return new Response("Bad data", { status: 400 });
 
-      return new Response("Unimplemented", { status: 501 });
-    } else {
-      return new Response("Bad route", { status: 400 });
+        ctx.waitUntil(traces(env, result.data));
+        return new Response("Unimplemented", { status: 501 });
+      }
+
+      default:
+        return new Response("Bad route", { status: 400 });
     }
 
     return new Response(null, {

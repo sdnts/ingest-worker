@@ -101,31 +101,45 @@ async function metrics(
   country: string,
   data: Metrics
 ): Promise<void> {
-  const encoder = new TextEncoder();
-  const today = new Date();
+  const tags: Record<string, string> = {
+    bucket: "metrics",
+    origin,
+  };
+  const fields: Record<string, string> = {};
 
-  /**
-   * For every origin that reports analytics, visitors get a unique ID every day.
-   * We don't log their IPs / UserAgents, but we do use them to calculate their IDs.
-   * Visitor IDs let us determine uniqueness.
-   *
-   * This is also the strategy Plausible uses, and is a great balance between
-   * usefulness and privacy.
-   */
-  const visitorDigest = await crypto.subtle.digest(
-    "SHA-256",
-    encoder.encode(today.toDateString() + origin + ip + userAgent)
-  );
-  const visitorId = Array.from(new Uint8Array(visitorDigest))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+  switch (data.name) {
+    case "page_view":
+      const encoder = new TextEncoder();
+      const today = new Date();
 
-  await ship(
-    env,
-    data.name,
-    { bucket: "analytics", site: origin, path: data.path },
-    { visitor: visitorId, location: country }
-  );
+      /**
+       * For every origin that reports a page_view, visitors get a unique ID every
+       * day. We don't log their IPs / UserAgents, but we do use them to calculate
+       * their IDs. Visitor IDs let us determine uniqueness.
+       *
+       * This is also the strategy Plausible uses, and is a great balance between
+       * usefulness and privacy.
+       */
+      const visitorDigest = await crypto.subtle.digest(
+        "SHA-256",
+        encoder.encode(today.toDateString() + origin + ip + userAgent)
+      );
+      const visitorId = Array.from(new Uint8Array(visitorDigest))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+
+      tags.path = data.path;
+
+      fields.visitor = visitorId;
+      fields.location = country;
+
+      break;
+
+    default:
+      break;
+  }
+
+  await ship(env, data.name, tags, fields);
 }
 
 async function logs(env: Env, data: Logs): Promise<void> {}

@@ -24,19 +24,25 @@ export default {
     ctx: ExecutionContext
   ): Promise<Response> {
     const url = new URL(request.url);
-    if (url.pathname === "/p") {
-      return new Response("OK", { status: 200 });
-    }
 
-    if (request.method !== "POST") {
-      return new Response("Bad method", { status: 400 });
-    }
+    if (url.pathname === "/p") return new Response("OK", { status: 200 });
 
     const origin = request.headers.get("Origin") ?? "";
-    if (!env.ALLOWED_ORIGINS.includes(origin)) {
+    if (!env.ALLOWED_ORIGINS.includes(origin))
       return new Response("Bad origin", { status: 400 });
+
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 200,
+        headers: {
+          "access-control-allow-origin": origin,
+          "access-control-allow-methods": "POST",
+        },
+      });
     }
 
+    if (request.method !== "POST")
+      return new Response("Bad method", { status: 400 });
     const params = await request.json();
 
     if (url.pathname === "/m") {

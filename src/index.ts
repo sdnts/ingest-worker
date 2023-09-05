@@ -10,13 +10,11 @@ import {
 } from "./schema";
 
 export interface Env {
-  // Secrets
-  ACCESS_CLIENT_ID: string;
-  ACCESS_CLIENT_SECRET: string;
+  allowedOrigins: string[];
 
-  // Vars
-  ALLOWED_ORIGINS: string[];
-  TELEGRAF_URL: string;
+  telegrafUrl: string;
+  telegrafClientId: string;
+  telegrafClientSecret: string;
 }
 
 export default {
@@ -30,7 +28,7 @@ export default {
     if (url.pathname === "/p") return new Response("pong", { status: 200 });
 
     const origin = request.headers.get("Origin") ?? "";
-    if (!env.ALLOWED_ORIGINS.includes(origin)) {
+    if (!env.allowedOrigins.includes(origin)) {
       return new Response("Bad origin", { status: 400 });
     }
 
@@ -184,9 +182,9 @@ async function metrics(env: Env, origin: string, data: Metrics): Promise<void> {
   await ship(env, data.name, tags, fields);
 }
 
-async function logs(env: Env, data: Logs): Promise<void> {}
+async function logs(env: Env, data: Logs): Promise<void> { }
 
-async function traces(env: Env, data: Traces): Promise<void> {}
+async function traces(env: Env, data: Traces): Promise<void> { }
 
 /**
  * Ships a measurement value to Sinope. Formats measurement into the InfluxDB
@@ -214,11 +212,11 @@ function ship(
     .join(",");
   const today = new Date();
 
-  return fetch(env.TELEGRAF_URL, {
+  return fetch(env.telegrafUrl, {
     method: "POST",
     headers: {
-      "cf-access-client-id": env.ACCESS_CLIENT_ID,
-      "cf-access-client-secret": env.ACCESS_CLIENT_SECRET,
+      "cf-access-client-id": env.telegrafClientId,
+      "cf-access-client-secret": env.telegrafClientSecret,
     },
     body: `${measurement},${t} ${f} ${today.getTime()}`,
   });

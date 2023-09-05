@@ -134,6 +134,17 @@ async function metrics(
       fields.location = country;
 
       break;
+    }
+
+    case "request": {
+      tags.method = data.method;
+      tags.path = data.path;
+
+      fields.status = String(data.status);
+      fields.rayId = data.rayId;
+
+      break;
+    }
 
     default:
       break;

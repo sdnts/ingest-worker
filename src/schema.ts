@@ -6,6 +6,13 @@ export const metricsSchema = z.discriminatedUnion("name", [
     name: z.literal("page_view"),
     path: z.string(),
   }),
+  z.object({
+    name: z.literal("request"),
+    method: z.string(),
+    path: z.string(),
+    status: z.number(),
+    rayId: z.string(),
+  }),
 ]);
 
 export type Logs = z.infer<typeof logsSchema>;

@@ -83,7 +83,7 @@ export default {
         const result = logsSchema.safeParse(params);
         if (!result.success) return new Response("Bad data", { status: 400 });
 
-        ctx.waitUntil(logs(env, result.data));
+        ctx.waitUntil(logs(env, origin, result.data));
         return new Response("Unimplemented", { status: 501 });
       }
 
@@ -94,7 +94,7 @@ export default {
         const result = tracesSchema.safeParse(params);
         if (!result.success) return new Response("Bad data", { status: 400 });
 
-        ctx.waitUntil(traces(env, result.data));
+        ctx.waitUntil(traces(env, origin, result.data));
         return new Response("Unimplemented", { status: 501 });
       }
 
@@ -182,9 +182,9 @@ async function metrics(env: Env, origin: string, data: Metrics): Promise<void> {
   await ship(env, data.name, tags, fields);
 }
 
-async function logs(env: Env, data: Logs): Promise<void> { }
+async function logs(env: Env, origin: string, data: Logs): Promise<void> { }
 
-async function traces(env: Env, data: Traces): Promise<void> { }
+async function traces(env: Env, origin: string, data: Traces): Promise<void> { }
 
 /**
  * Ships a measurement value to Sinope. Formats measurement into the InfluxDB

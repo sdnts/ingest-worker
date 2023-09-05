@@ -1,7 +1,9 @@
 import {
+  Analytics,
   Logs,
   Metrics,
   Traces,
+  analyticsSchema,
   logsSchema,
   metricsSchema,
   tracesSchema,
@@ -21,7 +23,7 @@ export default {
   async fetch(
     request: Request,
     env: Env,
-    ctx: ExecutionContext
+    ctx: ExecutionContext,
   ): Promise<Response> {
     const url = new URL(request.url);
 
@@ -49,8 +51,11 @@ export default {
     const params = await request.json();
 
     switch (url.pathname) {
-      case "/m": {
-        const result = metricsSchema.safeParse(params);
+      case "/a": {
+        // For analytics, unsecured. Generally used by client-side scripts.
+        // Will be forwarded to InfluxDB by Sinope's Telegraf service.
+
+        const result = analyticsSchema.safeParse(params);
         if (!result.success) return new Response("Bad data", { status: 400 });
 
         const ip = request.headers.get("cf-connecting-ip") ?? "";
@@ -58,12 +63,25 @@ export default {
         const country = request.headers.get("cf-ipcountry") ?? "unknown";
 
         ctx.waitUntil(
-          metrics(env, origin, ip, userAgent, country, result.data)
+          analytics(env, origin, ip, userAgent, country, result.data),
         );
+        break;
+      }
+      case "/m": {
+        // For metrics, secured by Access. Generally used by server-side code.
+        // Will be forwarded to InfluxDB by Sinope's Telegraf service.
+
+        const result = metricsSchema.safeParse(params);
+        if (!result.success) return new Response("Bad data", { status: 400 });
+
+        ctx.waitUntil(metrics(env, origin, result.data));
         break;
       }
 
       case "/l": {
+        // For logs, secured by Access. Generally used by server-side code.
+        // Will be forwarded to Loki by Sinope's Telegraf service.
+
         const result = logsSchema.safeParse(params);
         if (!result.success) return new Response("Bad data", { status: 400 });
 
@@ -72,6 +90,9 @@ export default {
       }
 
       case "/t": {
+        // For traces, secured by Access. Generally used by server-side code.
+        // Will be forwarded to Tempo by Sinope's Telegraf service.
+
         const result = tracesSchema.safeParse(params);
         if (!result.success) return new Response("Bad data", { status: 400 });
 
@@ -93,14 +114,52 @@ export default {
   },
 };
 
-async function metrics(
+async function analytics(
   env: Env,
   origin: string,
   ip: string,
   userAgent: string,
   country: string,
-  data: Metrics
+  data: Analytics,
 ): Promise<void> {
+  const encoder = new TextEncoder();
+  const today = new Date();
+
+  /**
+   * For every origin that reports a page_view, visitors get a unique ID every
+   * day. We don't log their IPs / UserAgents, but we do use them to calculate
+   * their IDs. Visitor IDs let us determine uniqueness.
+   *
+   * This is also the strategy Plausible uses, and is a great balance between
+   * usefulness and privacy.
+   */
+  const visitorDigest = await crypto.subtle.digest(
+    "SHA-256",
+    encoder.encode(today.toDateString() + origin + ip + userAgent),
+  );
+  const visitorId = Array.from(new Uint8Array(visitorDigest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  await ship(
+    env,
+    "page_view",
+    {
+      bucket: "metrics",
+      origin,
+      path: data.path,
+    },
+    {
+      visitor: visitorId,
+      location: country,
+    },
+  );
+}
+
+async function metrics(env: Env, origin: string, data: Metrics): Promise<void> {
+  // Tags are indexed by InfluxDB, fields are not
+  // Use tags sparingly, for data that has a known set of possible values
+
   const tags: Record<string, string> = {
     bucket: "metrics",
     origin,
@@ -108,34 +167,6 @@ async function metrics(
   const fields: Record<string, string> = {};
 
   switch (data.name) {
-    case "page_view":
-      const encoder = new TextEncoder();
-      const today = new Date();
-
-      /**
-       * For every origin that reports a page_view, visitors get a unique ID every
-       * day. We don't log their IPs / UserAgents, but we do use them to calculate
-       * their IDs. Visitor IDs let us determine uniqueness.
-       *
-       * This is also the strategy Plausible uses, and is a great balance between
-       * usefulness and privacy.
-       */
-      const visitorDigest = await crypto.subtle.digest(
-        "SHA-256",
-        encoder.encode(today.toDateString() + origin + ip + userAgent)
-      );
-      const visitorId = Array.from(new Uint8Array(visitorDigest))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-
-      tags.path = data.path;
-
-      fields.visitor = visitorId;
-      fields.location = country;
-
-      break;
-    }
-
     case "request": {
       tags.method = data.method;
       tags.path = data.path;
@@ -170,7 +201,7 @@ function ship(
   env: Env,
   measurement: string,
   tags: Record<string, string>,
-  fields: Record<string, string>
+  fields: Record<string, string>,
 ) {
   const t = Object.entries(tags)
     .map(([k, v]) => `${k}=${v}`)

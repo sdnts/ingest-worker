@@ -1,6 +1,6 @@
 name = "ingest-worker"
 main = "src/index.ts"
-compatibility_date = "2023-02-19"
+compatibility_date = "2023-09-05"
 
 [vars]
 telegrafUrl = "https://telegraf.sdnts.dev/api/v2/write?precision=ms"

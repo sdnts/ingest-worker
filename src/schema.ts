@@ -1,10 +1,12 @@
 import { z } from "zod";
 
 export type Analytics = z.infer<typeof analyticsSchema>;
-export const analyticsSchema = z.object({
-  name: z.literal("page_view"),
-  path: z.string(),
-});
+export const analyticsSchema = z.discriminatedUnion("name", [
+  z.object({
+    name: z.literal("page_view"),
+    path: z.string(),
+  }),
+]);
 
 export type Metrics = z.infer<typeof metricsSchema>;
 export const metricsSchema = z.discriminatedUnion("name", [

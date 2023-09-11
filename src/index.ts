@@ -9,13 +9,17 @@ import {
   tracesSchema,
 } from "./schema";
 
-export interface Env {
-  allowedOrigins: string[];
-
+interface Env {
   telegrafUrl: string;
   telegrafClientId: string;
   telegrafClientSecret: string;
 }
+
+export const allowedOrigins = [
+  "https://dietcode.io",
+  "https://blob.city",
+  "https://api.blob.city",
+];
 
 export default {
   async fetch(
@@ -28,7 +32,7 @@ export default {
     if (url.pathname === "/p") return new Response("pong", { status: 200 });
 
     const origin = request.headers.get("Origin") ?? "";
-    if (!env.allowedOrigins.includes(origin)) {
+    if (!allowedOrigins.includes(origin)) {
       return new Response("Bad origin", { status: 400 });
     }
 

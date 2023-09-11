@@ -15,7 +15,7 @@ export const metricsSchema = z.discriminatedUnion("name", [
     method: z.string(),
     path: z.string(),
     status: z.number(),
-    rayId: z.string(),
+    fields: z.record(z.string(), z.string()),
   }),
 ]);
 

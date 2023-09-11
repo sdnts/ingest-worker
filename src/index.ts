@@ -166,16 +166,13 @@ async function metrics(env: Env, origin: string, data: Metrics): Promise<void> {
     bucket: "metrics",
     origin,
   };
-  const fields: Record<string, string> = {};
+  const fields: Record<string, string> = data.fields;
 
   switch (data.name) {
     case "request": {
       tags.method = data.method;
       tags.path = data.path;
-
-      fields.status = String(data.status);
-      fields.rayId = data.rayId;
-
+      tags.status = String(data.status);
       break;
     }
 

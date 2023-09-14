@@ -1,6 +1,6 @@
 {
   "name": "ingest-worker",
-  "packageManager": "yarn@3.4.1",
+  "packageManager": "yarn@3.6.3",
   "devDependencies": {
     "@cloudflare/workers-types": "4.20230904.0",
     "typescript": "5.2.2",

@@ -49,7 +49,7 @@ test.describe("analytics", async () => {
     await expect(res.text()).resolves.toBe("Bad data");
   });
 
-  test("incorrect schema", async ({ worker }) => {
+  test("malformed body", async ({ worker }) => {
     const res = await worker.fetch("/a", {
       method: "POST",
       headers: { Origin: "https://dietcode.io" },
@@ -113,7 +113,7 @@ test.describe("analytics", async () => {
     expect(upstreamRequest).not.toBeUndefined();
     expect(upstreamRequest.method).toBe("POST");
     expect(upstreamRequest.body).toMatch(
-      'page_view,bucket=metrics,origin=https://dietcode.io,path=/random visitor="b6b9d1b50d2e72ad62db863748c044c817e4953fe347d6ce0c1f975a01a40adf",location="US"',
+      'page_view,bucket=metrics,environment=production,origin=https://dietcode.io,path=/random visitor="b6b9d1b50d2e72ad62db863748c044c817e4953fe347d6ce0c1f975a01a40adf",location="US"',
     );
   });
 
@@ -140,7 +140,7 @@ test.describe("analytics", async () => {
     expect(upstreamRequest).not.toBeUndefined();
     expect(upstreamRequest.method).toBe("POST");
     expect(upstreamRequest.body).toMatch(
-      `page_view,bucket=metrics,origin=https://dietcode.io,path=/ visitor="${visitor1Id}",location="US"`,
+      `page_view,bucket=metrics,environment=production,origin=https://dietcode.io,path=/ visitor="${visitor1Id}",location="US"`,
     );
 
     // POST some analytics from the same visitor, but a different page
@@ -160,7 +160,7 @@ test.describe("analytics", async () => {
     expect(upstreamRequest).not.toBeUndefined();
     expect(upstreamRequest.method).toBe("POST");
     expect(upstreamRequest.body).toMatch(
-      `page_view,bucket=metrics,origin=https://dietcode.io,path=/sse visitor="${visitor1Id}",location="US"`,
+      `page_view,bucket=metrics,environment=production,origin=https://dietcode.io,path=/sse visitor="${visitor1Id}",location="US"`,
     );
 
     // POST some analytics from a second visitor on the same page
@@ -180,7 +180,7 @@ test.describe("analytics", async () => {
     expect(upstreamRequest).not.toBeUndefined();
     expect(upstreamRequest.method).toBe("POST");
     expect(upstreamRequest.body).toMatch(
-      `page_view,bucket=metrics,origin=https://dietcode.io,path=/ visitor="${visitor2Id}",location="US"`,
+      `page_view,bucket=metrics,environment=production,origin=https://dietcode.io,path=/ visitor="${visitor2Id}",location="US"`,
     );
 
     // POST some analytics from the second visitor on the second page
@@ -200,7 +200,7 @@ test.describe("analytics", async () => {
     expect(upstreamRequest).not.toBeUndefined();
     expect(upstreamRequest.method).toBe("POST");
     expect(upstreamRequest.body).toMatch(
-      `page_view,bucket=metrics,origin=https://dietcode.io,path=/sse visitor="${visitor2Id}",location="US"`,
+      `page_view,bucket=metrics,environment=production,origin=https://dietcode.io,path=/sse visitor="${visitor2Id}",location="US"`,
     );
   });
 });
@@ -212,7 +212,7 @@ test.describe("metrics", async () => {
     await expect(res.text()).resolves.toBe("Bad data");
   });
 
-  test("incorrect schema", async ({ worker }) => {
+  test("malformed body", async ({ worker }) => {
     const res = await worker.fetch("/m", {
       method: "POST",
       body: JSON.stringify({}),
@@ -241,7 +241,7 @@ test.describe("metrics", async () => {
     expect(upstreamRequest).not.toBeUndefined();
     expect(upstreamRequest.method).toBe("POST");
     expect(upstreamRequest.body).toMatch(
-      `request,bucket=metrics,origin=https://blob.city,method=PUT,path=/tunnel,status=101 rayId="abcd",tunnelId="1234",peerId="1"`,
+      `request,bucket=metrics,environment=production,origin=https://blob.city,method=PUT,path=/tunnel,status=101 rayId="abcd",tunnelId="1234",peerId="1"`,
     );
   });
 });
@@ -253,13 +253,51 @@ test.describe("logs", async () => {
     await expect(res.text()).resolves.toBe("Bad data");
   });
 
-  test("incorrect schema", async ({ worker }) => {
+  test("malformed body", async ({ worker }) => {
     const res = await worker.fetch("/l", {
       method: "POST",
       body: JSON.stringify({}),
     });
     expect(res.status).toBe(400);
     await expect(res.text()).resolves.toBe("Bad data");
+  });
+
+  test("logs with environment", async ({ worker, request }) => {
+    const res = await worker.fetch("/l", {
+      method: "POST",
+      body: JSON.stringify({
+        environment: "staging",
+        origin: "https://blob.city",
+        logs: [
+          {
+            origin: "https://api.blob.city",
+            timestamp: { v: "001" },
+            message: "Incoming request",
+          },
+        ],
+      }),
+    });
+    expect(res.status).toBe(202);
+
+    await worker.waitUntilExit();
+
+    const upstreamRequest = await request.get("/get").then((r) => r.json());
+    expect(upstreamRequest).not.toBeUndefined();
+    expect(upstreamRequest.method).toBe("POST");
+    expect(upstreamRequest.body).toBe(
+      JSON.stringify({
+        streams: [
+          {
+            stream: {
+              environment: "staging",
+              origin: "https://blob.city",
+              level: "info",
+            },
+            values: [["001000000", "Incoming request"]],
+          },
+        ],
+      }),
+    );
   });
 
   test("logs with level", async ({ worker, request }) => {
@@ -288,7 +326,11 @@ test.describe("logs", async () => {
       JSON.stringify({
         streams: [
           {
-            stream: { origin: "https://blob.city", level: "fatal" },
+            stream: {
+              environment: "production",
+              origin: "https://blob.city",
+              level: "fatal",
+            },
             values: [["001000000", "Incoming request"]],
           },
         ],
@@ -321,7 +363,11 @@ test.describe("logs", async () => {
       JSON.stringify({
         streams: [
           {
-            stream: { origin: "https://blob.city", level: "info" },
+            stream: {
+              environment: "production",
+              origin: "https://blob.city",
+              level: "info",
+            },
             values: [["001000000", "Incoming request"]],
           },
         ],
@@ -354,7 +400,11 @@ test.describe("logs", async () => {
       JSON.stringify({
         streams: [
           {
-            stream: { origin: "https://blob.city", level: "info" },
+            stream: {
+              environment: "production",
+              origin: "https://blob.city",
+              level: "info",
+            },
             values: [["001", "Incoming request"]],
           },
         ],
@@ -387,7 +437,11 @@ test.describe("logs", async () => {
       JSON.stringify({
         streams: [
           {
-            stream: { origin: "https://blob.city", level: "info" },
+            stream: {
+              environment: "production",
+              origin: "https://blob.city",
+              level: "info",
+            },
             values: [["001", "Incoming request"]],
           },
         ],
@@ -421,7 +475,11 @@ test.describe("logs", async () => {
       JSON.stringify({
         streams: [
           {
-            stream: { origin: "https://blob.city", level: "info" },
+            stream: {
+              environment: "production",
+              origin: "https://blob.city",
+              level: "info",
+            },
             values: [
               ["001", "Incoming request", JSON.stringify({ method: "GET" })],
             ],
@@ -457,7 +515,11 @@ test.describe("logs", async () => {
       JSON.stringify({
         streams: [
           {
-            stream: { origin: "https://blob.city", level: "info" },
+            stream: {
+              environment: "production",
+              origin: "https://blob.city",
+              level: "info",
+            },
             values: [
               ["001", "Incoming request", JSON.stringify({ rayId: "1234" })],
             ],
@@ -494,7 +556,11 @@ test.describe("logs", async () => {
       JSON.stringify({
         streams: [
           {
-            stream: { origin: "https://blob.city", level: "info" },
+            stream: {
+              environment: "production",
+              origin: "https://blob.city",
+              level: "info",
+            },
             values: [
               [
                 "001",
@@ -550,7 +616,11 @@ test.describe("logs", async () => {
       JSON.stringify({
         streams: [
           {
-            stream: { origin: "https://blob.city", level: "info" },
+            stream: {
+              environment: "production",
+              origin: "https://blob.city",
+              level: "info",
+            },
             values: [
               [
                 "001000000",
@@ -569,7 +639,11 @@ test.describe("logs", async () => {
             ],
           },
           {
-            stream: { origin: "https://blob.city", level: "debug" },
+            stream: {
+              environment: "production",
+              origin: "https://blob.city",
+              level: "debug",
+            },
             values: [
               [
                 "002000000",
@@ -579,7 +653,11 @@ test.describe("logs", async () => {
             ],
           },
           {
-            stream: { origin: "https://blob.city", level: "trace" },
+            stream: {
+              environment: "production",
+              origin: "https://blob.city",
+              level: "trace",
+            },
             values: [
               [
                 "003",

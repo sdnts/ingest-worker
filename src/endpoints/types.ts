@@ -11,3 +11,7 @@ export type Endpoint<Schema extends z.Schema, Params = z.infer<Schema>> = {
     request: Request,
   ) => Promise<any>;
 };
+
+export const EnvironmentSchema = z
+  .enum(["development", "staging", "production"])
+  .default("production");

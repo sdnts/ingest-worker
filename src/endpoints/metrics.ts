@@ -1,9 +1,10 @@
 import { z } from "zod";
-import { Endpoint } from "./types";
+import { Endpoint, EnvironmentSchema } from "./types";
 
 const schema = z.discriminatedUnion("name", [
   z.object({
     name: z.literal("page_view"),
+    environment: EnvironmentSchema,
     origin: z.string(),
     path: z.string(),
     fields: z.object({
@@ -14,6 +15,7 @@ const schema = z.discriminatedUnion("name", [
 
   z.object({
     name: z.literal("request"),
+    environment: EnvironmentSchema,
     origin: z.string(),
     method: z.string(),
     path: z.string(),
@@ -34,6 +36,7 @@ export const endpoint: Endpoint<typeof schema> = {
 
     const tags: Record<string, string> = {
       bucket: "metrics",
+      environment: params.environment,
       origin: params.origin,
     };
     const fields = params.fields;

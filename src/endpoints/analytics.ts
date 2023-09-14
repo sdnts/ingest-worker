@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { endpoint as metrics } from "./metrics";
-import { Endpoint } from "./types";
+import { Endpoint, EnvironmentSchema } from "./types";
 
 export const schema = z.discriminatedUnion("name", [
   z.object({
     name: z.literal("page_view"),
+    environment: EnvironmentSchema,
     path: z.string(),
   }),
 ]);
@@ -48,6 +49,7 @@ export const endpoint: Endpoint<typeof schema> = {
         success: true,
         data: {
           name: "page_view",
+          environment: params.environment,
           origin,
           path: params.path,
           fields: {

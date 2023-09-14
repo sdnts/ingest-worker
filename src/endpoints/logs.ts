@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Endpoint } from "./types";
+import { Endpoint, EnvironmentSchema } from "./types";
 
 const LogLevel = z
   .enum(["trace", "debug", "info", "warn", "error", "fatal"])
@@ -7,6 +7,9 @@ const LogLevel = z
 type LogLevel = z.infer<typeof LogLevel>;
 
 const schema = z.object({
+  environment: EnvironmentSchema,
+
+  // A unique identifier for the service sending logs. Generally a URL.
   origin: z.string(),
 
   // Common metadata to attach to every log line
@@ -51,6 +54,7 @@ export const endpoint: Endpoint<typeof schema> = {
       streams: Object.entries(levelBuckets).map(([level, logs]) => {
         return {
           stream: {
+            environment: params.data.environment,
             origin: params.data.origin,
             level,
           },

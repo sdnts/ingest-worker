@@ -22,6 +22,7 @@ export const endpoint: Endpoint<typeof schema> = {
     const encoder = new TextEncoder();
     const today = new Date();
 
+    const origin = request.headers.get("origin") ?? "";
     const ip = request.headers.get("cf-connecting-ip") ?? "";
     const userAgent = request.headers.get("user-agent") ?? "";
     const country = request.headers.get("cf-ipcountry") ?? "unknown";
@@ -47,6 +48,7 @@ export const endpoint: Endpoint<typeof schema> = {
         success: true,
         data: {
           name: "page_view",
+          origin,
           path: params.path,
           fields: {
             visitor,

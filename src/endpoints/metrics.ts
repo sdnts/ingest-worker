@@ -4,6 +4,7 @@ import { Endpoint } from "./types";
 const schema = z.discriminatedUnion("name", [
   z.object({
     name: z.literal("page_view"),
+    origin: z.string(),
     path: z.string(),
     fields: z.object({
       visitor: z.string(),
@@ -13,6 +14,7 @@ const schema = z.discriminatedUnion("name", [
 
   z.object({
     name: z.literal("request"),
+    origin: z.string(),
     method: z.string(),
     path: z.string(),
     status: z.number(),
@@ -26,18 +28,18 @@ const schema = z.discriminatedUnion("name", [
 export const endpoint: Endpoint<typeof schema> = {
   path: "/m",
   schema,
-  ship: ({ data: params }, env) => {
+  ship: ({ data: params }, env, request) => {
     // Tags are indexed by InfluxDB, fields are not
     // Use tags sparingly, for data that has a known set of possible values
 
     const tags: Record<string, string> = {
       bucket: "metrics",
-      origin,
+      origin: params.origin,
     };
     const fields = params.fields;
 
     switch (params.name) {
-      case "request":
+      case "page_view":
         tags.path = params.path;
         break;
 

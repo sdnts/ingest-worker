@@ -1,0 +1,3 @@
+name = "upstream"
+main = "upstream.ts"
+compatibility_date = "2023-09-05"

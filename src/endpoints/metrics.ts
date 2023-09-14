@@ -70,8 +70,8 @@ export const endpoint: Endpoint<typeof schema> = {
     return fetch(env.telegrafUrl, {
       method: "POST",
       headers: {
-        "cf-access-client-id": env.telegrafClientId,
-        "cf-access-client-secret": env.telegrafClientSecret,
+        "cf-access-client-id": env.cfAccessClientId,
+        "cf-access-client-secret": env.cfAccessClientSecret,
       },
       body: `${params.name},${t} ${f} ${today}`,
     });

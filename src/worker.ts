@@ -6,12 +6,12 @@ import { endpoint as traces } from "./endpoints/traces";
 
 export interface Env {
   telegrafUrl: string;
-  telegrafClientId: string;
-  telegrafClientSecret: string;
-
   lokiUrl: string;
-  lokiClientId: string;
-  lokiClientSecret: string;
+
+  // Values for the `ingest-worker` service token on CF Access
+  // This token has permissions to talk to both Telegraf and Loki
+  cfAccessClientId: string;
+  cfAccessClientSecret: string;
 }
 
 export default {
@@ -42,8 +42,8 @@ export default {
         return new Response(null, {
           status: 200,
           headers: {
-            "access-control-allow-origin": origin,
-            "access-control-allow-methods": "POST",
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Methods": "POST",
           },
         });
     }
@@ -73,8 +73,8 @@ export default {
     return new Response(null, {
       status: 202,
       headers: {
-        "access-control-allow-origin": origin,
-        "access-control-allow-methods": "POST",
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Methods": "POST",
       },
     });
   },

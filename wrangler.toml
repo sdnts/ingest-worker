@@ -1,5 +1,5 @@
 name = "ingest-worker"
-main = "src/index.ts"
+main = "src/worker.ts"
 compatibility_date = "2023-09-05"
 
 [vars]

@@ -16,6 +16,7 @@ export const schema = z.discriminatedUnion("name", [
  */
 export const endpoint: Endpoint<typeof schema> = {
   path: "/a",
+  origins: ["https://dietcode.io", "https://blob.city"],
   schema,
   ship: async ({ data: params }, env, request) => {
     const encoder = new TextEncoder();

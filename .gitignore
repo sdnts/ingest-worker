@@ -8,3 +8,4 @@
 !.yarn/versions
 
 node_modules
+.dev.vars

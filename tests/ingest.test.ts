@@ -11,6 +11,10 @@ const test = t.extend<{}, WorkerFixtures>({
     async ({ }, use) => {
       const worker = await unstable_dev("src/worker.ts", {
         experimental: { disableExperimentalWarning: true },
+        vars: {
+          telegrafUrl: "http://localhost:8888/put",
+          lokiUrl: "http://localhost:8888/put",
+        },
       });
       await use(worker);
       await worker.stop();
@@ -105,9 +109,7 @@ test.describe("analytics", async () => {
     });
     await worker.waitUntilExit();
 
-    const upstreamRequest = await request
-      .get("http://localhost:8888/get")
-      .then((r) => r.json());
+    const upstreamRequest = await request.get("/get").then((r) => r.json());
     expect(upstreamRequest).not.toBeUndefined();
     expect(upstreamRequest.method).toBe("POST");
     expect(upstreamRequest.body).toMatch(
@@ -134,9 +136,7 @@ test.describe("analytics", async () => {
     });
     await worker.waitUntilExit();
 
-    let upstreamRequest = await request
-      .get("http://localhost:8888/get")
-      .then((r) => r.json());
+    let upstreamRequest = await request.get("/get").then((r) => r.json());
     expect(upstreamRequest).not.toBeUndefined();
     expect(upstreamRequest.method).toBe("POST");
     expect(upstreamRequest.body).toMatch(
@@ -156,9 +156,7 @@ test.describe("analytics", async () => {
     });
     await worker.waitUntilExit();
 
-    upstreamRequest = await request
-      .get("http://localhost:8888/get")
-      .then((r) => r.json());
+    upstreamRequest = await request.get("/get").then((r) => r.json());
     expect(upstreamRequest).not.toBeUndefined();
     expect(upstreamRequest.method).toBe("POST");
     expect(upstreamRequest.body).toMatch(
@@ -178,9 +176,7 @@ test.describe("analytics", async () => {
     });
     await worker.waitUntilExit();
 
-    upstreamRequest = await request
-      .get("http://localhost:8888/get")
-      .then((r) => r.json());
+    upstreamRequest = await request.get("/get").then((r) => r.json());
     expect(upstreamRequest).not.toBeUndefined();
     expect(upstreamRequest.method).toBe("POST");
     expect(upstreamRequest.body).toMatch(
@@ -200,9 +196,7 @@ test.describe("analytics", async () => {
     });
     await worker.waitUntilExit();
 
-    upstreamRequest = await request
-      .get("http://localhost:8888/get")
-      .then((r) => r.json());
+    upstreamRequest = await request.get("/get").then((r) => r.json());
     expect(upstreamRequest).not.toBeUndefined();
     expect(upstreamRequest.method).toBe("POST");
     expect(upstreamRequest.body).toMatch(
@@ -213,10 +207,7 @@ test.describe("analytics", async () => {
 
 test.describe("metrics", async () => {
   test("no body", async ({ worker }) => {
-    const res = await worker.fetch("/m", {
-      method: "POST",
-    });
-
+    const res = await worker.fetch("/m", { method: "POST" });
     expect(res.status).toBe(400);
     await expect(res.text()).resolves.toBe("Bad data");
   });
@@ -226,7 +217,6 @@ test.describe("metrics", async () => {
       method: "POST",
       body: JSON.stringify({}),
     });
-
     expect(res.status).toBe(400);
     await expect(res.text()).resolves.toBe("Bad data");
   });
@@ -247,13 +237,359 @@ test.describe("metrics", async () => {
 
     await worker.waitUntilExit();
 
-    const upstreamRequest = await request
-      .get("http://localhost:8888/get")
-      .then((r) => r.json());
+    const upstreamRequest = await request.get("/get").then((r) => r.json());
     expect(upstreamRequest).not.toBeUndefined();
     expect(upstreamRequest.method).toBe("POST");
     expect(upstreamRequest.body).toMatch(
       `request,bucket=metrics,origin=https://blob.city,method=PUT,path=/tunnel,status=101 rayId="abcd",tunnelId="1234",peerId="1"`,
+    );
+  });
+});
+
+test.describe("logs", async () => {
+  test("no body", async ({ worker }) => {
+    const res = await worker.fetch("/l", { method: "POST" });
+    expect(res.status).toBe(400);
+    await expect(res.text()).resolves.toBe("Bad data");
+  });
+
+  test("incorrect schema", async ({ worker }) => {
+    const res = await worker.fetch("/l", {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+    expect(res.status).toBe(400);
+    await expect(res.text()).resolves.toBe("Bad data");
+  });
+
+  test("logs with level", async ({ worker, request }) => {
+    const res = await worker.fetch("/l", {
+      method: "POST",
+      body: JSON.stringify({
+        origin: "https://blob.city",
+        logs: [
+          {
+            level: "fatal",
+            origin: "https://blob.city",
+            timestamp: { v: "001" },
+            message: "Incoming request",
+          },
+        ],
+      }),
+    });
+    expect(res.status).toBe(202);
+
+    await worker.waitUntilExit();
+
+    const upstreamRequest = await request.get("/get").then((r) => r.json());
+    expect(upstreamRequest).not.toBeUndefined();
+    expect(upstreamRequest.method).toBe("POST");
+    expect(upstreamRequest.body).toBe(
+      JSON.stringify({
+        streams: [
+          {
+            stream: { origin: "https://blob.city", level: "fatal" },
+            values: [["001000000", "Incoming request"]],
+          },
+        ],
+      }),
+    );
+  });
+
+  test("logs with ms precision", async ({ worker, request }) => {
+    const res = await worker.fetch("/l", {
+      method: "POST",
+      body: JSON.stringify({
+        origin: "https://blob.city",
+        logs: [
+          {
+            origin: "https://blob.city",
+            timestamp: { v: "001" },
+            message: "Incoming request",
+          },
+        ],
+      }),
+    });
+    expect(res.status).toBe(202);
+
+    await worker.waitUntilExit();
+
+    const upstreamRequest = await request.get("/get").then((r) => r.json());
+    expect(upstreamRequest).not.toBeUndefined();
+    expect(upstreamRequest.method).toBe("POST");
+    expect(upstreamRequest.body).toBe(
+      JSON.stringify({
+        streams: [
+          {
+            stream: { origin: "https://blob.city", level: "info" },
+            values: [["001000000", "Incoming request"]],
+          },
+        ],
+      }),
+    );
+  });
+
+  test("logs with ns precision", async ({ worker, request }) => {
+    const res = await worker.fetch("/l", {
+      method: "POST",
+      body: JSON.stringify({
+        origin: "https://blob.city",
+        logs: [
+          {
+            origin: "https://blob.city",
+            timestamp: { p: "ns", v: "001" },
+            message: "Incoming request",
+          },
+        ],
+      }),
+    });
+    expect(res.status).toBe(202);
+
+    await worker.waitUntilExit();
+
+    const upstreamRequest = await request.get("/get").then((r) => r.json());
+    expect(upstreamRequest).not.toBeUndefined();
+    expect(upstreamRequest.method).toBe("POST");
+    expect(upstreamRequest.body).toBe(
+      JSON.stringify({
+        streams: [
+          {
+            stream: { origin: "https://blob.city", level: "info" },
+            values: [["001", "Incoming request"]],
+          },
+        ],
+      }),
+    );
+  });
+
+  test("logs without kv", async ({ worker, request }) => {
+    const res = await worker.fetch("/l", {
+      method: "POST",
+      body: JSON.stringify({
+        origin: "https://blob.city",
+        logs: [
+          {
+            origin: "https://blob.city",
+            timestamp: { p: "ns", v: "001" },
+            message: "Incoming request",
+          },
+        ],
+      }),
+    });
+    expect(res.status).toBe(202);
+
+    await worker.waitUntilExit();
+
+    const upstreamRequest = await request.get("/get").then((r) => r.json());
+    expect(upstreamRequest).not.toBeUndefined();
+    expect(upstreamRequest.method).toBe("POST");
+    expect(upstreamRequest.body).toBe(
+      JSON.stringify({
+        streams: [
+          {
+            stream: { origin: "https://blob.city", level: "info" },
+            values: [["001", "Incoming request"]],
+          },
+        ],
+      }),
+    );
+  });
+
+  test("logs with line kv", async ({ worker, request }) => {
+    const res = await worker.fetch("/l", {
+      method: "POST",
+      body: JSON.stringify({
+        origin: "https://blob.city",
+        logs: [
+          {
+            origin: "https://blob.city",
+            timestamp: { p: "ns", v: "001" },
+            message: "Incoming request",
+            kv: { method: "GET" },
+          },
+        ],
+      }),
+    });
+    expect(res.status).toBe(202);
+
+    await worker.waitUntilExit();
+
+    const upstreamRequest = await request.get("/get").then((r) => r.json());
+    expect(upstreamRequest).not.toBeUndefined();
+    expect(upstreamRequest.method).toBe("POST");
+    expect(upstreamRequest.body).toBe(
+      JSON.stringify({
+        streams: [
+          {
+            stream: { origin: "https://blob.city", level: "info" },
+            values: [
+              ["001", "Incoming request", JSON.stringify({ method: "GET" })],
+            ],
+          },
+        ],
+      }),
+    );
+  });
+
+  test("logs with common kv", async ({ worker, request }) => {
+    const res = await worker.fetch("/l", {
+      method: "POST",
+      body: JSON.stringify({
+        origin: "https://blob.city",
+        kv: { rayId: "1234" },
+        logs: [
+          {
+            origin: "https://blob.city",
+            timestamp: { p: "ns", v: "001" },
+            message: "Incoming request",
+          },
+        ],
+      }),
+    });
+    expect(res.status).toBe(202);
+
+    await worker.waitUntilExit();
+
+    const upstreamRequest = await request.get("/get").then((r) => r.json());
+    expect(upstreamRequest).not.toBeUndefined();
+    expect(upstreamRequest.method).toBe("POST");
+    expect(upstreamRequest.body).toBe(
+      JSON.stringify({
+        streams: [
+          {
+            stream: { origin: "https://blob.city", level: "info" },
+            values: [
+              ["001", "Incoming request", JSON.stringify({ rayId: "1234" })],
+            ],
+          },
+        ],
+      }),
+    );
+  });
+
+  test("logs with both kv", async ({ worker, request }) => {
+    const res = await worker.fetch("/l", {
+      method: "POST",
+      body: JSON.stringify({
+        origin: "https://blob.city",
+        kv: { rayId: "1234" },
+        logs: [
+          {
+            origin: "https://blob.city",
+            timestamp: { p: "ns", v: "001" },
+            message: "Incoming request",
+            kv: { method: "GET" },
+          },
+        ],
+      }),
+    });
+    expect(res.status).toBe(202);
+
+    await worker.waitUntilExit();
+
+    const upstreamRequest = await request.get("/get").then((r) => r.json());
+    expect(upstreamRequest).not.toBeUndefined();
+    expect(upstreamRequest.method).toBe("POST");
+    expect(upstreamRequest.body).toBe(
+      JSON.stringify({
+        streams: [
+          {
+            stream: { origin: "https://blob.city", level: "info" },
+            values: [
+              [
+                "001",
+                "Incoming request",
+                JSON.stringify({ rayId: "1234", method: "GET" }),
+              ],
+            ],
+          },
+        ],
+      }),
+    );
+  });
+
+  test("multiple logs", async ({ worker, request }) => {
+    const res = await worker.fetch("/l", {
+      method: "POST",
+      body: JSON.stringify({
+        origin: "https://blob.city",
+        kv: { rayId: "abcd" },
+        logs: [
+          {
+            timestamp: { v: "001" },
+            message: "Incoming request",
+            kv: { method: "GET", path: "/tunnel" },
+          },
+          {
+            level: "debug",
+            timestamp: { v: "002" },
+            message: "Forwarding to DO",
+            kv: { tunnelId: "1234" },
+          },
+          {
+            level: "trace",
+            timestamp: { p: "ns", v: "003" },
+            message: "Creating WebSocketPair",
+          },
+          {
+            timestamp: { v: "004" },
+            message: "Response",
+            kv: { status: 200 },
+          },
+        ],
+      }),
+    });
+    expect(res.status).toBe(202);
+
+    await worker.waitUntilExit();
+
+    const upstreamRequest = await request.get("/get").then((r) => r.json());
+    expect(upstreamRequest).not.toBeUndefined();
+    expect(upstreamRequest.method).toBe("POST");
+    expect(upstreamRequest.body).toBe(
+      JSON.stringify({
+        streams: [
+          {
+            stream: { origin: "https://blob.city", level: "info" },
+            values: [
+              [
+                "001000000",
+                "Incoming request",
+                JSON.stringify({
+                  rayId: "abcd",
+                  method: "GET",
+                  path: "/tunnel",
+                }),
+              ],
+              [
+                "004000000",
+                "Response",
+                JSON.stringify({ rayId: "abcd", status: 200 }),
+              ],
+            ],
+          },
+          {
+            stream: { origin: "https://blob.city", level: "debug" },
+            values: [
+              [
+                "002000000",
+                "Forwarding to DO",
+                JSON.stringify({ rayId: "abcd", tunnelId: "1234" }),
+              ],
+            ],
+          },
+          {
+            stream: { origin: "https://blob.city", level: "trace" },
+            values: [
+              [
+                "003",
+                "Creating WebSocketPair",
+                JSON.stringify({ rayId: "abcd" }),
+              ],
+            ],
+          },
+        ],
+      }),
     );
   });
 });

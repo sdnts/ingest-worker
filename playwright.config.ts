@@ -10,4 +10,7 @@ export default defineConfig({
     url: "http://localhost:8888",
     reuseExistingServer: !process.env.CI,
   },
+  use: {
+    baseURL: "http://localhost:8888",
+  },
 });

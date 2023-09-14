@@ -28,7 +28,7 @@ const schema = z.discriminatedUnion("name", [
 export const endpoint: Endpoint<typeof schema> = {
   path: "/m",
   schema,
-  ship: ({ data: params }, env, request) => {
+  ship: async ({ data: params }, env) => {
     // Tags are indexed by InfluxDB, fields are not
     // Use tags sparingly, for data that has a known set of possible values
 
@@ -67,7 +67,7 @@ export const endpoint: Endpoint<typeof schema> = {
       .join(",");
     const today = new Date().getTime();
 
-    return fetch(env.telegrafUrl, {
+    const response = await fetch(env.telegrafUrl, {
       method: "POST",
       headers: {
         "cf-access-client-id": env.cfAccessClientId,
@@ -75,5 +75,9 @@ export const endpoint: Endpoint<typeof schema> = {
       },
       body: `${params.name},${t} ${f} ${today}`,
     });
+
+    console.log("Shipped metrics");
+    console.log("Status:", response.status);
+    if (response.status != 204) console.log("Body:", await response.text());
   },
 };

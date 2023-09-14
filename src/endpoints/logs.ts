@@ -70,7 +70,7 @@ export const endpoint: Endpoint<typeof schema> = {
       }),
     });
 
-    return fetch(env.lokiUrl, {
+    const response = await fetch(env.lokiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -79,5 +79,9 @@ export const endpoint: Endpoint<typeof schema> = {
       },
       body,
     });
+
+    console.log("Shipped logs");
+    console.log("Status:", response.status);
+    if (response.status != 204) console.log("Body:", await response.text());
   },
 };

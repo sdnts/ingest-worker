@@ -36,7 +36,7 @@ export const endpoint: Endpoint<typeof schema> = {
      */
     const visitorDigest = await crypto.subtle.digest(
       "SHA-256",
-      encoder.encode(today.toDateString() + origin + ip + userAgent),
+      encoder.encode(today.toDateString() + ip + userAgent),
     );
     const visitor = Array.from(new Uint8Array(visitorDigest))
       .map((b) => b.toString(16).padStart(2, "0"))

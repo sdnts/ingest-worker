@@ -4,4 +4,4 @@ compatibility_date = "2023-09-05"
 
 [vars]
 telegrafUrl = "https://telegraf.sdnts.dev/api/v2/write?precision=ms"
-lokiUrl = "https://loki.sdnts.dev/api/v1/push"
+lokiUrl = "https://loki.sdnts.dev/loki/api/v1/push"

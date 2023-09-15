@@ -37,7 +37,7 @@ export const endpoint: Endpoint<typeof schema> = {
     const tags: Record<string, string> = {
       bucket: "metrics",
       environment: params.environment,
-      origin: params.origin,
+      service: params.service,
     };
     const fields = params.fields;
 

@@ -30,6 +30,8 @@ export const endpoint: Endpoint<typeof schema> = {
     const userAgent = request.headers.get("user-agent") ?? "";
     const country = request.headers.get("cf-ipcountry") ?? "unknown";
 
+    const service = new URL(origin).hostname.replaceAll(".", "-");
+
     /**
      * For every origin that reports a page_view, visitors get a unique ID every
      * day. We don't log their IPs / UserAgents, but we do use them to calculate
@@ -52,7 +54,7 @@ export const endpoint: Endpoint<typeof schema> = {
         data: {
           name: "page_view",
           environment: params.environment,
-          origin,
+          service,
           path: params.path,
           fields: {
             visitor,

@@ -113,8 +113,27 @@ test.describe("analytics", async () => {
     expect(upstreamRequest).not.toBeUndefined();
     expect(upstreamRequest.method).toBe("POST");
     expect(upstreamRequest.body).toMatch(
-      /page_view,bucket=metrics,environment=production,origin=https:\/\/dietcode.io,path=\/random visitor="\w+",location="US" \d+/,
+      /page_view,bucket=metrics,environment=production,service=dietcode-io,path=\/random visitor="\w+",location="US" \d+/,
     );
+  });
+
+  test("service calculation", async ({ worker, request }) => {
+    await worker.fetch("/a", {
+      method: "POST",
+      headers: {
+        Origin: "https://dietcode.io",
+        "CF-Connecting-IP": "1.1.1.1",
+        "User-Agent": "user-agent",
+        "CF-IPCountry": "US",
+      },
+      body: JSON.stringify({ name: "page_view", path: "/random" }),
+    });
+    await worker.waitUntilExit();
+
+    const upstreamRequest = await request.get("/get").then((r) => r.json());
+    expect(upstreamRequest).not.toBeUndefined();
+    expect(upstreamRequest.method).toBe("POST");
+    expect(upstreamRequest.body).toMatch(/service=dietcode-io/);
   });
 
   test("visitor uniqueness", async ({ worker, request }) => {
@@ -221,7 +240,7 @@ test.describe("metrics", async () => {
       method: "POST",
       body: JSON.stringify({
         name: "request",
-        origin: "https://blob.city",
+        service: "blob-city",
         method: "PUT",
         path: "/tunnel",
         status: 101,
@@ -236,7 +255,7 @@ test.describe("metrics", async () => {
     expect(upstreamRequest).not.toBeUndefined();
     expect(upstreamRequest.method).toBe("POST");
     expect(upstreamRequest.body).toMatch(
-      `request,bucket=metrics,environment=production,origin=https://blob.city,method=PUT,path=/tunnel,status=101 rayId="abcd",tunnelId="1234",peerId="1"`,
+      `request,bucket=metrics,environment=production,service=blob-city,method=PUT,path=/tunnel,status=101 rayId="abcd",tunnelId="1234",peerId="1"`,
     );
   });
 });
@@ -262,10 +281,9 @@ test.describe("logs", async () => {
       method: "POST",
       body: JSON.stringify({
         environment: "staging",
-        origin: "https://blob.city",
+        service: "blob-city",
         logs: [
           {
-            origin: "https://api.blob.city",
             timestamp: { v: "001" },
             message: "Incoming request",
           },
@@ -285,7 +303,7 @@ test.describe("logs", async () => {
           {
             stream: {
               environment: "staging",
-              origin: "https://blob.city",
+              service: "blob-city",
               level: "info",
             },
             values: [["001000000", 'msg="Incoming request"']],
@@ -299,11 +317,10 @@ test.describe("logs", async () => {
     const res = await worker.fetch("/l", {
       method: "POST",
       body: JSON.stringify({
-        origin: "https://blob.city",
+        service: "blob-city",
         logs: [
           {
             level: "fatal",
-            origin: "https://blob.city",
             timestamp: { v: "001" },
             message: "Incoming request",
           },
@@ -323,7 +340,7 @@ test.describe("logs", async () => {
           {
             stream: {
               environment: "production",
-              origin: "https://blob.city",
+              service: "blob-city",
               level: "fatal",
             },
             values: [["001000000", 'msg="Incoming request"']],
@@ -337,10 +354,9 @@ test.describe("logs", async () => {
     const res = await worker.fetch("/l", {
       method: "POST",
       body: JSON.stringify({
-        origin: "https://blob.city",
+        service: "blob-city",
         logs: [
           {
-            origin: "https://blob.city",
             timestamp: { v: "001" },
             message: "Incoming request",
           },
@@ -360,7 +376,7 @@ test.describe("logs", async () => {
           {
             stream: {
               environment: "production",
-              origin: "https://blob.city",
+              service: "blob-city",
               level: "info",
             },
             values: [["001000000", 'msg="Incoming request"']],
@@ -374,10 +390,9 @@ test.describe("logs", async () => {
     const res = await worker.fetch("/l", {
       method: "POST",
       body: JSON.stringify({
-        origin: "https://blob.city",
+        service: "blob-city",
         logs: [
           {
-            origin: "https://blob.city",
             timestamp: { p: "ns", v: "001" },
             message: "Incoming request",
           },
@@ -397,7 +412,7 @@ test.describe("logs", async () => {
           {
             stream: {
               environment: "production",
-              origin: "https://blob.city",
+              service: "blob-city",
               level: "info",
             },
             values: [["001", 'msg="Incoming request"']],
@@ -411,10 +426,9 @@ test.describe("logs", async () => {
     const res = await worker.fetch("/l", {
       method: "POST",
       body: JSON.stringify({
-        origin: "https://blob.city",
+        service: "blob-city",
         logs: [
           {
-            origin: "https://blob.city",
             timestamp: { p: "ns", v: "001" },
             message: "Incoming request",
           },
@@ -434,7 +448,7 @@ test.describe("logs", async () => {
           {
             stream: {
               environment: "production",
-              origin: "https://blob.city",
+              service: "blob-city",
               level: "info",
             },
             values: [["001", 'msg="Incoming request"']],
@@ -448,10 +462,9 @@ test.describe("logs", async () => {
     const res = await worker.fetch("/l", {
       method: "POST",
       body: JSON.stringify({
-        origin: "https://blob.city",
+        service: "blob-city",
         logs: [
           {
-            origin: "https://blob.city",
             timestamp: { p: "ns", v: "001" },
             message: "Incoming request",
             kv: { method: "GET" },
@@ -472,7 +485,7 @@ test.describe("logs", async () => {
           {
             stream: {
               environment: "production",
-              origin: "https://blob.city",
+              service: "blob-city",
               level: "info",
             },
             values: [["001", 'method="GET" msg="Incoming request"']],
@@ -486,11 +499,10 @@ test.describe("logs", async () => {
     const res = await worker.fetch("/l", {
       method: "POST",
       body: JSON.stringify({
-        origin: "https://blob.city",
+        service: "blob-city",
         kv: { rayId: "1234" },
         logs: [
           {
-            origin: "https://blob.city",
             timestamp: { p: "ns", v: "001" },
             message: "Incoming request",
           },
@@ -510,7 +522,7 @@ test.describe("logs", async () => {
           {
             stream: {
               environment: "production",
-              origin: "https://blob.city",
+              service: "blob-city",
               level: "info",
             },
             values: [["001", 'rayId="1234" msg="Incoming request"']],
@@ -524,11 +536,10 @@ test.describe("logs", async () => {
     const res = await worker.fetch("/l", {
       method: "POST",
       body: JSON.stringify({
-        origin: "https://blob.city",
+        service: "blob-city",
         kv: { rayId: "1234" },
         logs: [
           {
-            origin: "https://blob.city",
             timestamp: { p: "ns", v: "001" },
             message: "Incoming request",
             kv: { method: "GET" },
@@ -549,7 +560,7 @@ test.describe("logs", async () => {
           {
             stream: {
               environment: "production",
-              origin: "https://blob.city",
+              service: "blob-city",
               level: "info",
             },
             values: [
@@ -565,7 +576,7 @@ test.describe("logs", async () => {
     const res = await worker.fetch("/l", {
       method: "POST",
       body: JSON.stringify({
-        origin: "https://blob.city",
+        service: "blob-city",
         kv: { rayId: "abcd" },
         logs: [
           {
@@ -605,7 +616,7 @@ test.describe("logs", async () => {
           {
             stream: {
               environment: "production",
-              origin: "https://blob.city",
+              service: "blob-city",
               level: "info",
             },
             values: [
@@ -619,7 +630,7 @@ test.describe("logs", async () => {
           {
             stream: {
               environment: "production",
-              origin: "https://blob.city",
+              service: "blob-city",
               level: "debug",
             },
             values: [
@@ -632,7 +643,7 @@ test.describe("logs", async () => {
           {
             stream: {
               environment: "production",
-              origin: "https://blob.city",
+              service: "blob-city",
               level: "trace",
             },
             values: [["003", 'rayId="abcd" msg="Creating WebSocketPair"']],

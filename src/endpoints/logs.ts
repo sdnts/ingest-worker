@@ -28,7 +28,7 @@ const schema = z.object({
   environment: EnvironmentSchema,
 
   // A unique identifier for the service sending logs. Generally a URL.
-  origin: z.string(),
+  service: z.string(),
 
   // Common metadata to attach to every log line
   kv: LogKVSchema.optional(),
@@ -63,7 +63,7 @@ export const endpoint: Endpoint<typeof schema> = {
         return {
           stream: {
             environment: params.data.environment,
-            origin: params.data.origin,
+            service: params.data.service,
             level,
           },
           values: logs.map((l) => {

@@ -16,19 +16,21 @@ const schema = z.object({
   kv: z.record(z.union([z.string(), z.number()])).optional(),
 
   // Individual log lines
-  logs: z.array(
-    z.object({
-      level: LogLevel,
-      timestamp: z.object({
-        p: z.enum(["ms", "ns"]).default("ms"), // Precision of the timestamp value
-        v: z.string(), // Value of the (unix) timestamp in the precision specified abovr
+  logs: z
+    .array(
+      z.object({
+        level: LogLevel,
+        timestamp: z.object({
+          p: z.enum(["ms", "ns"]).default("ms"), // Precision of the timestamp value
+          v: z.string(), // Value of the (unix) timestamp in the precision specified abovr
+        }),
+        // Text content of the log
+        message: z.string(),
+        // Metadata specific to this log line
+        kv: z.record(z.union([z.string(), z.number()])).optional(),
       }),
-      // Text content of the log
-      message: z.string(),
-      // Metadata specific to this log line
-      kv: z.record(z.union([z.string(), z.number()])).optional(),
-    }),
-  ),
+    )
+    .min(1),
 });
 
 export const endpoint: Endpoint<typeof schema> = {

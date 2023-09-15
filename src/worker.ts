@@ -24,8 +24,6 @@ export default {
      * All authentication for this Worker is offloaded to Access.
      */
 
-    // return new Response(null, { status: 400 });
-
     const url = new URL(request.url);
     const origin = request.headers.get("Origin") ?? "";
 

@@ -1,28 +1,31 @@
 import { z } from "zod";
 import { Endpoint, EnvironmentSchema } from "./types";
 
-const schema = z.discriminatedUnion("name", [
-  z.object({
-    name: z.literal("page_view"),
+const schema = z
+  .object({
     environment: EnvironmentSchema,
-    origin: z.string(),
-    path: z.string(),
-    fields: z.object({
-      visitor: z.string(),
-      location: z.string(),
-    }),
-  }),
+    service: z.string(),
+  })
+  .and(
+    z.discriminatedUnion("name", [
+      z.object({
+        name: z.literal("page_view"),
+        path: z.string(),
+        fields: z.object({
+          visitor: z.string(),
+          location: z.string(),
+        }),
+      }),
 
-  z.object({
-    name: z.literal("request"),
-    environment: EnvironmentSchema,
-    origin: z.string(),
-    method: z.string(),
-    path: z.string(),
-    status: z.number(),
-    fields: z.record(z.string(), z.string()),
-  }),
-]);
+      z.object({
+        name: z.literal("request"),
+        method: z.string(),
+        path: z.string(),
+        status: z.number(),
+        fields: z.record(z.string(), z.string()),
+      }),
+    ]),
+  );
 
 /*
  * Endpoint for metrics, secured by Access. Generally used by server-side code.

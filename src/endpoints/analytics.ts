@@ -20,6 +20,8 @@ export const endpoint: Endpoint<typeof schema> = {
   origins: ["https://dietcode.io", "https://blob.city"],
   schema,
   ship: async ({ data: params }, env, request) => {
+    if (!request) return;
+
     const encoder = new TextEncoder();
     const today = new Date();
 

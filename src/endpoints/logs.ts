@@ -1,10 +1,28 @@
 import { z } from "zod";
 import { Endpoint, EnvironmentSchema } from "./types";
 
-const LogLevel = z
+export const LogLevelSchema = z
   .enum(["trace", "debug", "info", "warn", "error", "fatal"])
   .default("info");
-type LogLevel = z.infer<typeof LogLevel>;
+export type LogLevel = z.infer<typeof LogLevelSchema>;
+
+export const LogKVSchema = z.record(z.union([z.string(), z.number()]));
+export type LogKV = z.infer<typeof LogKVSchema>;
+
+export const LogSchema = z.object({
+  level: LogLevelSchema,
+  timestamp: z.object({
+    p: z.enum(["ms", "ns"]).default("ms"), // Precision of the timestamp value
+    v: z.string(), // Value of the (unix) timestamp in the precision specified abovr
+  }),
+
+  // Text content of the log
+  message: z.string(),
+
+  // Metadata specific to this log line
+  kv: LogKVSchema.optional(),
+});
+export type Log = z.infer<typeof LogSchema>;
 
 const schema = z.object({
   environment: EnvironmentSchema,
@@ -13,24 +31,10 @@ const schema = z.object({
   origin: z.string(),
 
   // Common metadata to attach to every log line
-  kv: z.record(z.union([z.string(), z.number()])).optional(),
+  kv: LogKVSchema.optional(),
 
   // Individual log lines
-  logs: z
-    .array(
-      z.object({
-        level: LogLevel,
-        timestamp: z.object({
-          p: z.enum(["ms", "ns"]).default("ms"), // Precision of the timestamp value
-          v: z.string(), // Value of the (unix) timestamp in the precision specified abovr
-        }),
-        // Text content of the log
-        message: z.string(),
-        // Metadata specific to this log line
-        kv: z.record(z.union([z.string(), z.number()])).optional(),
-      }),
-    )
-    .min(1),
+  logs: z.array(LogSchema).min(1),
 });
 
 export const endpoint: Endpoint<typeof schema> = {
@@ -39,6 +43,8 @@ export const endpoint: Endpoint<typeof schema> = {
   async ship(params, env) {
     // Use labels for things that have a finite set of values
     // Use metadata for everything else
+
+    if (params.data.logs.length === 0) return;
 
     // Serialize logs to the Loki log entry format
     // https://grafana.com/docs/loki/latest/reference/api/#push-log-entries-to-loki
@@ -49,7 +55,7 @@ export const endpoint: Endpoint<typeof schema> = {
         else acc[l.level] = [l];
         return acc;
       },
-      {} as Record<LogLevel, z.infer<typeof schema>["logs"]>,
+      {} as Record<LogLevel, Log[]>,
     );
 
     const body = JSON.stringify({

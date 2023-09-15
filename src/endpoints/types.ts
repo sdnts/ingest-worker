@@ -8,7 +8,7 @@ export type Endpoint<Schema extends z.Schema, Params = z.infer<Schema>> = {
   ship?: (
     params: SafeParseSuccess<Params>,
     env: Env,
-    request: Request,
+    request?: Request,
   ) => Promise<any>;
 };
 

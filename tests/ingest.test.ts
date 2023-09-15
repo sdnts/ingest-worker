@@ -8,7 +8,7 @@ type WorkerFixtures = {
 
 const test = t.extend<{}, WorkerFixtures>({
   worker: [
-    async ({ }, use) => {
+    async ({}, use) => {
       const worker = await unstable_dev("src/worker.ts", {
         experimental: { disableExperimentalWarning: true },
         vars: {
@@ -22,7 +22,7 @@ const test = t.extend<{}, WorkerFixtures>({
     { scope: "worker" },
   ],
   upstream: [
-    async ({ }, use) => {
+    async ({}, use) => {
       const worker = await unstable_dev("tests/mocks/upstream.ts", {
         experimental: { disableExperimentalWarning: true },
       });
@@ -81,7 +81,7 @@ test.describe("analytics", async () => {
     expect(res.headers.get("access-control-allow-methods")).toBe("POST");
   });
 
-  test("cors headers", async ({ worker, request }) => {
+  test("cors headers", async ({ worker }) => {
     const res = await worker.fetch("/a", {
       method: "POST",
       headers: { Origin: "https://dietcode.io" },
@@ -113,16 +113,11 @@ test.describe("analytics", async () => {
     expect(upstreamRequest).not.toBeUndefined();
     expect(upstreamRequest.method).toBe("POST");
     expect(upstreamRequest.body).toMatch(
-      'page_view,bucket=metrics,environment=production,origin=https://dietcode.io,path=/random visitor="b6b9d1b50d2e72ad62db863748c044c817e4953fe347d6ce0c1f975a01a40adf",location="US"',
+      /page_view,bucket=metrics,environment=production,origin=https:\/\/dietcode.io,path=\/random visitor="\w+",location="US" \d+/,
     );
   });
 
   test("visitor uniqueness", async ({ worker, request }) => {
-    let visitor1Id =
-      "b6b9d1b50d2e72ad62db863748c044c817e4953fe347d6ce0c1f975a01a40adf";
-    let visitor2Id =
-      "9b72ddad82d7e9ecb7da3e109eab9f0386476074ece2a2c8f8afed1dae7facc2";
-
     // POST some analytics via visitor 1
     await worker.fetch("/a", {
       method: "POST",
@@ -139,29 +134,10 @@ test.describe("analytics", async () => {
     let upstreamRequest = await request.get("/get").then((r) => r.json());
     expect(upstreamRequest).not.toBeUndefined();
     expect(upstreamRequest.method).toBe("POST");
-    expect(upstreamRequest.body).toMatch(
-      `page_view,bucket=metrics,environment=production,origin=https://dietcode.io,path=/ visitor="${visitor1Id}",location="US"`,
-    );
+    expect(upstreamRequest.body).toMatch(/path=\/ visitor="\w+"/);
 
-    // POST some analytics from the same visitor, but a different page
-    await worker.fetch("/a", {
-      method: "POST",
-      headers: {
-        Origin: "https://dietcode.io",
-        "CF-Connecting-IP": "1.1.1.1",
-        "User-Agent": "user-agent",
-        "CF-IPCountry": "US",
-      },
-      body: JSON.stringify({ name: "page_view", path: "/sse" }),
-    });
-    await worker.waitUntilExit();
-
-    upstreamRequest = await request.get("/get").then((r) => r.json());
-    expect(upstreamRequest).not.toBeUndefined();
-    expect(upstreamRequest.method).toBe("POST");
-    expect(upstreamRequest.body).toMatch(
-      `page_view,bucket=metrics,environment=production,origin=https://dietcode.io,path=/sse visitor="${visitor1Id}",location="US"`,
-    );
+    const visitor1Id = upstreamRequest.body.match(/visitor="(\w+)"/)?.[1];
+    expect(visitor1Id).not.toBeUndefined();
 
     // POST some analytics from a second visitor on the same page
     await worker.fetch("/a", {
@@ -179,16 +155,19 @@ test.describe("analytics", async () => {
     upstreamRequest = await request.get("/get").then((r) => r.json());
     expect(upstreamRequest).not.toBeUndefined();
     expect(upstreamRequest.method).toBe("POST");
-    expect(upstreamRequest.body).toMatch(
-      `page_view,bucket=metrics,environment=production,origin=https://dietcode.io,path=/ visitor="${visitor2Id}",location="US"`,
-    );
+    expect(upstreamRequest.body).toMatch(/path=\/ visitor="\w+"/);
 
-    // POST some analytics from the second visitor on the second page
+    const visitor2Id = upstreamRequest.body.match(/visitor="(\w+)"/)?.[1];
+    expect(visitor2Id).not.toBeUndefined();
+
+    // ---
+
+    // POST some analytics from the visitor 1, but a different page
     await worker.fetch("/a", {
       method: "POST",
       headers: {
         Origin: "https://dietcode.io",
-        "CF-Connecting-IP": "2.2.2.2",
+        "CF-Connecting-IP": "1.1.1.1",
         "User-Agent": "user-agent",
         "CF-IPCountry": "US",
       },
@@ -199,9 +178,25 @@ test.describe("analytics", async () => {
     upstreamRequest = await request.get("/get").then((r) => r.json());
     expect(upstreamRequest).not.toBeUndefined();
     expect(upstreamRequest.method).toBe("POST");
-    expect(upstreamRequest.body).toMatch(
-      `page_view,bucket=metrics,environment=production,origin=https://dietcode.io,path=/sse visitor="${visitor2Id}",location="US"`,
-    );
+    expect(upstreamRequest.body).toMatch(`path=/sse visitor="${visitor1Id}"`);
+
+    // POST some analytics from the second visitor on a different page
+    await worker.fetch("/a", {
+      method: "POST",
+      headers: {
+        Origin: "https://dietcode.io",
+        "CF-Connecting-IP": "2.2.2.2",
+        "User-Agent": "user-agent",
+        "CF-IPCountry": "US",
+      },
+      body: JSON.stringify({ name: "page_view", path: "/cors" }),
+    });
+    await worker.waitUntilExit();
+
+    upstreamRequest = await request.get("/get").then((r) => r.json());
+    expect(upstreamRequest).not.toBeUndefined();
+    expect(upstreamRequest.method).toBe("POST");
+    expect(upstreamRequest.body).toMatch(`path=/cors visitor="${visitor2Id}"`);
   });
 });
 

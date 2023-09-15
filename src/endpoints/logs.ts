@@ -66,11 +66,7 @@ export const endpoint: Endpoint<typeof schema> = {
               l.timestamp.v = `${l.timestamp.v}000000`;
 
             if (!l.kv && !params.data.kv) return [l.timestamp.v, l.message];
-            return [
-              l.timestamp.v,
-              l.message,
-              JSON.stringify({ ...params.data.kv, ...l.kv }),
-            ];
+            return [l.timestamp.v, l.message, { ...params.data.kv, ...l.kv }];
           }),
         };
       }),

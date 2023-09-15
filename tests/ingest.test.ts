@@ -475,9 +475,7 @@ test.describe("logs", async () => {
               origin: "https://blob.city",
               level: "info",
             },
-            values: [
-              ["001", "Incoming request", JSON.stringify({ method: "GET" })],
-            ],
+            values: [["001", "Incoming request", { method: "GET" }]],
           },
         ],
       }),
@@ -515,9 +513,7 @@ test.describe("logs", async () => {
               origin: "https://blob.city",
               level: "info",
             },
-            values: [
-              ["001", "Incoming request", JSON.stringify({ rayId: "1234" })],
-            ],
+            values: [["001", "Incoming request", { rayId: "1234" }]],
           },
         ],
       }),
@@ -557,11 +553,7 @@ test.describe("logs", async () => {
               level: "info",
             },
             values: [
-              [
-                "001",
-                "Incoming request",
-                JSON.stringify({ rayId: "1234", method: "GET" }),
-              ],
+              ["001", "Incoming request", { rayId: "1234", method: "GET" }],
             ],
           },
         ],
@@ -620,17 +612,13 @@ test.describe("logs", async () => {
               [
                 "001000000",
                 "Incoming request",
-                JSON.stringify({
+                {
                   rayId: "abcd",
                   method: "GET",
                   path: "/tunnel",
-                }),
+                },
               ],
-              [
-                "004000000",
-                "Response",
-                JSON.stringify({ rayId: "abcd", status: 200 }),
-              ],
+              ["004000000", "Response", { rayId: "abcd", status: 200 }],
             ],
           },
           {
@@ -643,7 +631,7 @@ test.describe("logs", async () => {
               [
                 "002000000",
                 "Forwarding to DO",
-                JSON.stringify({ rayId: "abcd", tunnelId: "1234" }),
+                { rayId: "abcd", tunnelId: "1234" },
               ],
             ],
           },
@@ -653,13 +641,7 @@ test.describe("logs", async () => {
               origin: "https://blob.city",
               level: "trace",
             },
-            values: [
-              [
-                "003",
-                "Creating WebSocketPair",
-                JSON.stringify({ rayId: "abcd" }),
-              ],
-            ],
+            values: [["003", "Creating WebSocketPair", { rayId: "abcd" }]],
           },
         ],
       }),

@@ -65,8 +65,27 @@ export const endpoint: Endpoint<typeof schema> = {
             if (l.timestamp.p === "ms")
               l.timestamp.v = `${l.timestamp.v}000000`;
 
-            if (!l.kv && !params.data.kv) return [l.timestamp.v, l.message];
-            return [l.timestamp.v, l.message, { ...params.data.kv, ...l.kv }];
+            // Loki supports structured metadata that is supposed to be treated
+            // as labels, but it is experimental and doesn't seem to be working.
+            // Specifically, I don't see these structured metadata labels and
+            // cannot query using them.
+            // So instead I'll send a logfmt-style string as the message instead,
+            // which will let me use the `logfmt` stream processor.
+            // JSON is another option but stringified JSON be ugly.
+            // Reference: https://grafana.com/docs/loki/latest/get-started/labels/structured-metadata/
+            // TODO: We should just use structured metadata once it lands as stable
+
+            const log = Object.entries({
+              ...params.data.kv,
+              ...l.kv,
+              msg: l.message,
+            })
+              .map(([k, v]) => {
+                if (typeof v === "string") return `${k}="${v}"`;
+                return `${k}=${v}`;
+              })
+              .join(" ");
+            return [l.timestamp.v, log];
           }),
         };
       }),

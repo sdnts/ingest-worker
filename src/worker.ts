@@ -83,7 +83,7 @@ export default {
   ) {
     if (events.length == 0) return;
 
-    // Tail events can be batched, so break that open
+    // Multiple batches of tail events can be delivered at once
     ctx.waitUntil(Promise.all(events.map((e) => tail(e.events, env))));
 
     // TODO: Batched Loki pushes to avoid thundering herd

@@ -56,7 +56,13 @@ export const tail = async (
           if (typeof l.message[0] === "object") {
             // KV + Message mode
             kv = Object.entries(l.message[0]).reduce((o, [k, v]) => {
-              o[k] = String(v);
+              if (
+                typeof v === "string" ||
+                typeof v === "number" ||
+                typeof v === "boolean"
+              )
+                o[k] = v;
+              else o[k] = String(v);
               return o;
             }, {} as LogKV);
             message = l.message.slice(1).join(" ");
@@ -69,12 +75,12 @@ export const tail = async (
           return {
             level: l.level as LogLevel,
             timestamp: { p: "ms" as const, v: l.timestamp.toString() },
-            message: l.message[0],
-            kv: l.message[1],
+            message,
+            kv,
           };
         }),
         ...e.exceptions.map((l) => ({
-          level: "fatal" as const,
+          level: "error" as const,
           timestamp: { p: "ms" as const, v: l.timestamp.toString() },
           message: l.message,
         })),
@@ -82,7 +88,7 @@ export const tail = async (
 
       if ("request" in e.event) {
         l.push({
-          level: "info",
+          level: e.outcome === "ok" ? "info" : "fatal",
           // TODO: Make this the timestamp of the last log?
           timestamp: { p: "ms", v: e.eventTimestamp.toString() },
           kv: {

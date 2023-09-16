@@ -6,7 +6,9 @@ export const LogLevelSchema = z
   .default("info");
 export type LogLevel = z.infer<typeof LogLevelSchema>;
 
-export const LogKVSchema = z.record(z.union([z.string(), z.number()]));
+export const LogKVSchema = z.record(
+  z.union([z.string(), z.number(), z.boolean()]),
+);
 export type LogKV = z.infer<typeof LogKVSchema>;
 
 export const LogSchema = z.object({

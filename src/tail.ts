@@ -10,10 +10,6 @@ export const tail = async (
   events: TraceItem[],
   env: Env,
 ): Promise<Response[]> => {
-  // CAVEAT:
-  // Because this Worker is a tail consumer, it cannot currently be tailed itself.
-  // We can get around this by talking to Loki directly when we want to log.
-
   try {
     // Tail events can be batched, so break that open first
     const shipments = events.map((e) => {
@@ -122,23 +118,44 @@ export const tail = async (
     return Promise.all(shipments);
   } catch (e) {
     // Log shipping error, let Loki know so we can alert
-    return logs.ship!(
-      {
-        success: true,
-        data: {
-          environment: "production",
-          service: "ingest-worker",
-          logs: [
-            {
-              level: "fatal",
-              timestamp: { p: "ms", v: Date.now().toString() },
-              message: (e as Error).message,
-              kv: { name: (e as Error).name, stack: (e as Error).stack }
-            },
-          ],
+    try {
+      return logs.ship!(
+        {
+          success: true,
+          data: {
+            environment: "production",
+            service: "ingest-worker",
+            logs: [
+              {
+                level: "fatal",
+                timestamp: { p: "ms", v: Date.now().toString() },
+                message: (e as Error).message,
+                kv: { name: (e as Error).name, stack: (e as Error).stack },
+              },
+            ],
+          },
         },
-      },
-      env,
-    ).then((r) => [r]);
+        env,
+      ).then((r) => [r]);
+    } catch (e) {
+      // Error during error handling, this next statement must not throw
+      return logs.ship!(
+        {
+          success: true,
+          data: {
+            environment: "production",
+            service: "ingest-worker",
+            logs: [
+              {
+                level: "fatal",
+                timestamp: { p: "ms", v: Date.now().toString() },
+                message: "An error occured while handling a log shipping error",
+              },
+            ],
+          },
+        },
+        env,
+      ).then((r) => [r]);
+    }
   }
 };

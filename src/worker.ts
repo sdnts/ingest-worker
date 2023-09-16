@@ -77,16 +77,14 @@ export default {
   },
 
   async tail(
-    events: TailEvent[],
+    events: TraceItem[],
     env: Env,
     ctx: Pick<ExecutionContext, "waitUntil">,
   ) {
     if (events.length == 0) return;
+    ctx.waitUntil(tail(events, env));
 
-    // Multiple batches of tail events can be delivered at once
-    ctx.waitUntil(Promise.all(events.map((e) => tail(e.events, env))));
-
-    // TODO: Batched Loki pushes to avoid thundering herd
-    // TODO: Retry on failures
+    // TODO: Batched Loki pushes to avoid thundering herd?
+    // TODO: Retry on failures?
   },
 };

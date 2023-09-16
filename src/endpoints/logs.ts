@@ -48,24 +48,14 @@ export const endpoint: Endpoint<typeof schema> = {
     // Serialize logs to the Loki log entry format
     // https://grafana.com/docs/loki/latest/reference/api/#push-log-entries-to-loki
 
-    const levelBuckets = params.data.logs.reduce(
-      (acc, l) => {
-        if (acc[l.level]) acc[l.level].push(l);
-        else acc[l.level] = [l];
-        return acc;
-      },
-      {} as Record<LogLevel, Log[]>,
-    );
-
     const body = JSON.stringify({
-      streams: Object.entries(levelBuckets).map(([level, logs]) => {
-        return {
+      streams: [
+        {
           stream: {
             environment: params.data.environment,
             service: params.data.service,
-            level,
           },
-          values: logs.map((l) => {
+          values: params.data.logs.map((l) => {
             // Loki wants timestamps in nanoseconds
             if (l.timestamp.p === "ms")
               l.timestamp.v = `${l.timestamp.v}000000`;
@@ -80,10 +70,11 @@ export const endpoint: Endpoint<typeof schema> = {
             // Reference: https://grafana.com/docs/loki/latest/get-started/labels/structured-metadata/
             // TODO: We should just use structured metadata once it lands as stable
 
-            const log = Object.entries({
+            const line = Object.entries({
+              level: l.level,
               ...params.data.kv,
               ...l.kv,
-              msg: l.message,
+              message: l.message,
             })
               .filter(([_, v]) => v !== undefined) // Leave null values untouched
               .map(([k, v]) => {
@@ -91,10 +82,10 @@ export const endpoint: Endpoint<typeof schema> = {
                 return `${k}=${v}`;
               })
               .join(" ");
-            return [l.timestamp.v, log];
+            return [l.timestamp.v, line];
           }),
-        };
-      }),
+        },
+      ],
     });
 
     return fetch(env.lokiUrl, {

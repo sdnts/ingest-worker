@@ -98,6 +98,9 @@ export default {
                 timestamp: { p: "ms", v: Date.now().toString() },
                 kv: {
                   events: events.length,
+                  services: Array.from(
+                    new Set(events.map((e) => e.scriptName)),
+                  ).join(","),
                 },
                 message: "Received tail event",
               },

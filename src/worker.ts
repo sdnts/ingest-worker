@@ -81,6 +81,33 @@ export default {
     env: Env,
     ctx: Pick<ExecutionContext, "waitUntil">,
   ) {
+    // CAVEAT:
+    // Because this Worker is a tail consumer, it cannot currently be tailed itself.
+    // We can get around this by talking to Loki directly when we want to log.
+
+    ctx.waitUntil(
+      logs.ship(
+        {
+          success: true,
+          data: {
+            environment: "production",
+            service: "ingest-worker",
+            logs: [
+              {
+                level: "info",
+                timestamp: { p: "ms", v: Date.now().toString() },
+                kv: {
+                  events: events.length,
+                },
+                message: "Received tail event",
+              },
+            ],
+          },
+        },
+        env,
+      ),
+    );
+
     if (events.length == 0) return;
     ctx.waitUntil(tail(events, env));
 

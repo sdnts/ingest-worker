@@ -6,5 +6,5 @@ const schema = z.any();
 export const endpoint: Endpoint<typeof schema> = {
   path: "/p",
   schema,
-  ship: async () => { },
+  ship: async () => new Response("pong"),
 };

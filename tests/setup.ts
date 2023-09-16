@@ -1,23 +1,30 @@
-import { test as t } from "@playwright/test";
-import { UnstableDevWorker, unstable_dev } from "wrangler";
+import { Env } from "../src/worker";
+import { exec } from "child_process";
 
-type WorkerFixtures = {
-  worker: UnstableDevWorker;
+export const env: Env = {
+  telegrafUrl: "http://127.0.0.1:8888",
+  lokiUrl: "http://127.0.0.1:8888",
+  cfAccessClientId: "",
+  cfAccessClientSecret: "",
 };
 
-export const test = t.extend<{}, WorkerFixtures>({
-  worker: [
-    async ({}, use) => {
-      const worker = await unstable_dev("src/worker.ts", {
-        experimental: { disableExperimentalWarning: true },
-        vars: {
-          telegrafUrl: "http://localhost:8888/put",
-          lokiUrl: "http://localhost:8888/put",
-        },
-      });
-      await use(worker);
-      await worker.stop();
-    },
-    { scope: "worker" },
-  ],
-});
+export default async function setup() {
+  const aborter = new AbortController();
+  exec("yarn wrangler dev --port 8888", {
+    cwd: "tests/mocks",
+    signal: aborter.signal,
+  });
+
+  await new Promise<void>((r) => {
+    const interval = setInterval(() => {
+      fetch("http://127.0.0.1:8888")
+        .then(() => {
+          clearInterval(interval);
+          r();
+        })
+        .catch(() => {});
+    }, 100);
+  });
+
+  return () => aborter.abort();
+}

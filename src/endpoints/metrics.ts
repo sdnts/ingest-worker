@@ -3,8 +3,8 @@ import { Endpoint, EnvironmentSchema } from "./types";
 
 const schema = z
   .object({
-    environment: EnvironmentSchema,
     service: z.string(),
+    environment: EnvironmentSchema,
   })
   .and(
     z.discriminatedUnion("name", [
@@ -73,7 +73,7 @@ export const endpoint: Endpoint<typeof schema> = {
       .join(",");
     const today = new Date().getTime();
 
-    const response = await fetch(env.telegrafUrl, {
+    return fetch(env.telegrafUrl, {
       method: "POST",
       headers: {
         "cf-access-client-id": env.cfAccessClientId,
@@ -81,9 +81,5 @@ export const endpoint: Endpoint<typeof schema> = {
       },
       body: `${params.name},${t} ${f} ${today}`,
     });
-
-    console.log("Shipped metrics");
-    console.log("Status:", response.status);
-    if (response.status != 204) console.log("Body:", await response.text());
   },
 };

@@ -1,7 +1,9 @@
-import { expect } from "@playwright/test";
-import { test } from "./setup";
+import { test, expect } from "vitest";
+import { endpoint as ping } from "../src/endpoints/ping";
+import { env } from "./setup";
 
-test("ping", async ({ worker }) => {
-  const res = await worker.fetch("/p");
-  expect(res.status).toBe(202);
+test("ping", async () => {
+  const res = await ping.ship({ success: true, data: {} }, env);
+  expect(res.status).toBe(200);
+  await expect(res.text()).resolves.toBe("pong");
 });

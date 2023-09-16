@@ -5,11 +5,11 @@ export type Endpoint<Schema extends z.Schema, Params = z.infer<Schema>> = {
   path: `/${string}`;
   origins?: string[];
   schema: Schema;
-  ship?: (
+  ship: (
     params: SafeParseSuccess<Params>,
     env: Env,
     request?: Request,
-  ) => Promise<any>;
+  ) => Promise<Response>;
 };
 
 export const EnvironmentSchema = z

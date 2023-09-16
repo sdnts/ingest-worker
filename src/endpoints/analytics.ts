@@ -20,7 +20,7 @@ export const endpoint: Endpoint<typeof schema> = {
   origins: ["https://dietcode.io", "https://blob.city"],
   schema,
   ship: async ({ data: params }, env, request) => {
-    if (!request) return;
+    if (!request) throw new Error("Missing request");
 
     const encoder = new TextEncoder();
     const today = new Date();
@@ -48,7 +48,7 @@ export const endpoint: Endpoint<typeof schema> = {
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
 
-    return metrics.ship?.(
+    return metrics.ship!(
       {
         success: true,
         data: {
@@ -63,7 +63,6 @@ export const endpoint: Endpoint<typeof schema> = {
         },
       },
       env,
-      request,
     );
   },
 };

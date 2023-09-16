@@ -25,10 +25,9 @@ export const LogSchema = z.object({
 export type Log = z.infer<typeof LogSchema>;
 
 const schema = z.object({
-  environment: EnvironmentSchema,
-
-  // A unique identifier for the service sending logs. Generally a URL.
+  // A unique identifier for the service sending logs
   service: z.string(),
+  environment: EnvironmentSchema,
 
   // Common metadata to attach to every log line
   kv: LogKVSchema.optional(),
@@ -43,8 +42,6 @@ export const endpoint: Endpoint<typeof schema> = {
   async ship(params, env) {
     // Use labels for things that have a finite set of values
     // Use metadata for everything else
-
-    if (params.data.logs.length === 0) return;
 
     // Serialize logs to the Loki log entry format
     // https://grafana.com/docs/loki/latest/reference/api/#push-log-entries-to-loki
@@ -97,7 +94,7 @@ export const endpoint: Endpoint<typeof schema> = {
       }),
     });
 
-    const response = await fetch(env.lokiUrl, {
+    return fetch(env.lokiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -106,9 +103,5 @@ export const endpoint: Endpoint<typeof schema> = {
       },
       body,
     });
-
-    console.log("Shipped logs");
-    console.log("Status:", response.status);
-    if (response.status != 204) console.log("Body:", await response.text());
   },
 };

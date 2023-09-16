@@ -33,18 +33,27 @@ test("shipping error logs", async () => {
   ).then((r) => Promise.all(r.map((r) => r.json())));
 
   expect(response).toHaveLength(1);
-  expect(response[0]).toStrictEqual({
-    streams: [
-      {
-        stream: {
-          environment: "production",
-          service: "ingest-worker",
-          level: "fatal",
-        },
-        values: [["1000000", 'msg="Missing scriptName"']],
-      },
-    ],
-  });
+
+  // Can't use .toStrictEqual here because of the stacktrace
+
+  expect(response[0]).toHaveProperty('streams')
+
+  const streams: any[] = (response[0] as any).streams
+  expect(streams).toHaveLength(1)
+  expect(streams[0]).toHaveProperty('stream')
+  expect(streams[0]).toHaveProperty('values')
+
+  expect(streams[0].stream).toStrictEqual(
+    {
+      environment: "production",
+      service: "ingest-worker",
+      level: "fatal",
+    }
+  )
+  expect(streams[0].values).toHaveLength(1)
+  expect(streams[0].values[0]).toHaveLength(2)
+  expect(streams[0].values[0][0]).toBe('1000000')
+  expect(streams[0].values[0][1]).toMatch(/name="Error" stack="Error: Missing scriptName(.|\n)*" msg="Missing scriptName"/)
 
   vi.useRealTimers();
 });

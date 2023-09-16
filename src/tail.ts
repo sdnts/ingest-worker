@@ -133,6 +133,7 @@ export const tail = async (
               level: "fatal",
               timestamp: { p: "ms", v: Date.now().toString() },
               message: (e as Error).message,
+              kv: { name: (e as Error).name, stack: (e as Error).stack }
             },
           ],
         },

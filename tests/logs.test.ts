@@ -285,7 +285,7 @@ test("with both kv", async () => {
   });
 });
 
-test('with undefined kv values', async () => {
+test("with undefined kv values", async () => {
   const res = await logs
     .ship(
       {
@@ -320,7 +320,42 @@ test('with undefined kv values', async () => {
       },
     ],
   });
-})
+});
+
+test("with no message", async () => {
+  const res = await logs
+    .ship(
+      {
+        success: true,
+        data: {
+          service: "blob-city",
+          environment: "production",
+          kv: { common: undefined },
+          logs: [
+            {
+              level: "info",
+              timestamp: { p: "ns", v: "001" },
+            },
+          ],
+        },
+      },
+      env,
+    )
+    .then((r) => r.json());
+
+  expect(res).toStrictEqual({
+    streams: [
+      {
+        stream: {
+          environment: "production",
+          service: "blob-city",
+          level: "info",
+        },
+        values: [["001", ""]],
+      },
+    ],
+  });
+});
 
 test("multiple logs", async () => {
   const res = await logs

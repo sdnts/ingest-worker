@@ -19,7 +19,7 @@ export const LogSchema = z.object({
   }),
 
   // Text content of the log
-  message: z.string(),
+  message: z.string().optional(),
 
   // Metadata specific to this log line
   kv: LogKVSchema.optional(),

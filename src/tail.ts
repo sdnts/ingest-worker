@@ -19,29 +19,7 @@ export const tail = async (
       if (!e.eventTimestamp) throw new Error("Missing eventTimestamp");
       if (!e.event) throw new Error("Missing event");
 
-      const kv = {};
-      const l: Log[] = [];
-
-      if ("request" in e.event) {
-        const url = new URL(e.event.request.url);
-        l.push({
-          level: "info",
-          timestamp: { p: "ms", v: e.eventTimestamp.toString() },
-          kv: {
-            path: url.pathname,
-            method: e.event.request.method,
-          },
-          message: "Incoming request",
-        });
-      } else if ("cron" in e.event) {
-      } else if ("scheduledTime" in e.event) {
-      } else if ("queue" in e.event) {
-      } else if ("mailFrom" in e.event) {
-      } else {
-        throw new Error("Unrecognized event source");
-      }
-
-      l.push(
+      const l: Log[] = [
         ...e.logs.map((l) => {
           // Log discipline / protocol:
           // To allow for useful Kvs and messages, logs are allowed in two "formats":
@@ -80,25 +58,23 @@ export const tail = async (
           timestamp: { p: "ms" as const, v: l.timestamp.toString() },
           message: l.message,
         })),
-      );
+      ];
 
-      if ("request" in e.event) {
-        l.push({
-          level: e.outcome === "ok" ? "info" : "fatal",
-          // TODO: Make this the timestamp of the last log?
-          timestamp: { p: "ms", v: e.eventTimestamp.toString() },
-          kv: {
-            outcome: e.outcome,
-            status: e.event.response?.status ?? 0,
-          },
-          message: "Outgoing response",
-        });
-      } else if ("cron" in e.event) {
-      } else if ("scheduledTime" in e.event) {
-      } else if ("queue" in e.event) {
-      } else if ("mailFrom" in e.event) {
-      } else {
-        throw new Error("Unrecognized event source");
+      if (e.outcome !== "ok") {
+        if ("request" in e.event) {
+          l.push({
+            level: "fatal",
+            timestamp: { p: "ms", v: e.eventTimestamp.toString() },
+            kv: { outcome: e.outcome },
+            message: "Fatal outcome",
+          });
+        } else if ("cron" in e.event) {
+        } else if ("scheduledTime" in e.event) {
+        } else if ("queue" in e.event) {
+        } else if ("mailFrom" in e.event) {
+        } else {
+          throw new Error("Unrecognized event source");
+        }
       }
 
       return logs.ship!(
@@ -107,7 +83,6 @@ export const tail = async (
           data: {
             environment: "production" as const,
             service: e.scriptName,
-            kv,
             logs: l,
           },
         },

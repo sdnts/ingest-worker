@@ -36,69 +36,29 @@ test("shipping error logs", async () => {
 
   // Can't use .toStrictEqual here because of the stacktrace
 
-  expect(response[0]).toHaveProperty('streams')
+  expect(response[0]).toHaveProperty("streams");
 
-  const streams: any[] = (response[0] as any).streams
-  expect(streams).toHaveLength(1)
-  expect(streams[0]).toHaveProperty('stream')
-  expect(streams[0]).toHaveProperty('values')
+  const streams: any[] = (response[0] as any).streams;
+  expect(streams).toHaveLength(1);
+  expect(streams[0]).toHaveProperty("stream");
+  expect(streams[0]).toHaveProperty("values");
 
-  expect(streams[0].stream).toStrictEqual(
-    {
-      environment: "production",
-      service: "ingest-worker",
-      level: "fatal",
-    }
-  )
-  expect(streams[0].values).toHaveLength(1)
-  expect(streams[0].values[0]).toHaveLength(2)
-  expect(streams[0].values[0][0]).toBe('1000000')
-  expect(streams[0].values[0][1]).toMatch(/name="Error" stack="Error: Missing scriptName(.|\n)*" msg="Missing scriptName"/)
+  expect(streams[0].stream).toStrictEqual({
+    environment: "production",
+    service: "ingest-worker",
+    level: "fatal",
+  });
+  expect(streams[0].values).toHaveLength(1);
+  expect(streams[0].values[0]).toHaveLength(2);
+  expect(streams[0].values[0][0]).toBe("1000000");
+  expect(streams[0].values[0][1]).toMatch(
+    /name="Error" stack="Error: Missing scriptName(.|\n)*" msg="Missing scriptName"/,
+  );
 
   vi.useRealTimers();
 });
 
-test("automatic request/response logs", async () => {
-  const response = await tail(
-    [
-      {
-        scriptName: "blob-city-api",
-        exceptions: [],
-        logs: [],
-        outcome: "ok",
-        event: {
-          request: {
-            url: "https://api.blob.city/tunnel",
-            method: "GET",
-          },
-          response: { status: 101 },
-        },
-        eventTimestamp: 1,
-        diagnosticsChannelEvents: [],
-      },
-    ],
-    env,
-  ).then((r) => Promise.all(r.map((r) => r.json())));
-
-  expect(response).toHaveLength(1);
-  expect(response[0]).toStrictEqual({
-    streams: [
-      {
-        stream: {
-          environment: "production",
-          service: "blob-city-api",
-          level: "info",
-        },
-        values: [
-          ["1000000", 'path="/tunnel" method="GET" msg="Incoming request"'],
-          ["1000000", 'outcome="ok" status=101 msg="Outgoing response"'],
-        ],
-      },
-    ],
-  });
-});
-
-test("response logs when outcome is not ok", async () => {
+test("extra log when outcome is not ok", async () => {
   const response = await tail(
     [
       {
@@ -126,21 +86,9 @@ test("response logs when outcome is not ok", async () => {
         stream: {
           environment: "production",
           service: "blob-city-api",
-          level: "info",
-        },
-        values: [
-          ["1000000", 'path="/tunnel" method="GET" msg="Incoming request"'],
-        ],
-      },
-      {
-        stream: {
-          environment: "production",
-          service: "blob-city-api",
           level: "fatal",
         },
-        values: [
-          ["1000000", 'outcome="cpuExceeded" status=0 msg="Outgoing response"'],
-        ],
+        values: [["1000000", 'outcome="cpuExceeded" msg="Fatal outcome"']],
       },
     ],
   });
@@ -193,11 +141,7 @@ test("script logs", async () => {
           service: "blob-city-api",
           level: "info",
         },
-        values: [
-          ["1000000", 'path="/tunnel" method="GET" msg="Incoming request"'],
-          ["1000000", 'msg="log1"'],
-          ["1000000", 'outcome="ok" status=101 msg="Outgoing response"'],
-        ],
+        values: [["1000000", 'msg="log1"']],
       },
       {
         stream: {
@@ -255,17 +199,6 @@ test("script exceptions", async () => {
   expect(response).toHaveLength(1);
   expect(response[0]).toStrictEqual({
     streams: [
-      {
-        stream: {
-          environment: "production",
-          service: "blob-city-api",
-          level: "info",
-        },
-        values: [
-          ["1000000", 'path="/tunnel" method="GET" msg="Incoming request"'],
-          ["1000000", 'outcome="ok" status=101 msg="Outgoing response"'],
-        ],
-      },
       {
         stream: {
           environment: "production",
@@ -344,11 +277,7 @@ test("event batch", async () => {
           service: "blob-city-api",
           level: "info",
         },
-        values: [
-          ["1000000", 'path="/tunnel" method="GET" msg="Incoming request"'],
-          ["1000000", 'msg="log1"'],
-          ["1000000", 'outcome="ok" status=101 msg="Outgoing response"'],
-        ],
+        values: [["1000000", 'msg="log1"']],
       },
       {
         stream: {
@@ -362,17 +291,6 @@ test("event batch", async () => {
   });
   expect(response[1]).toStrictEqual({
     streams: [
-      {
-        stream: {
-          environment: "production",
-          service: "blob-city-api",
-          level: "info",
-        },
-        values: [
-          ["1000000", 'path="/tunnel" method="GET" msg="Incoming request"'],
-          ["1000000", 'outcome="ok" status=101 msg="Outgoing response"'],
-        ],
-      },
       {
         stream: {
           environment: "production",

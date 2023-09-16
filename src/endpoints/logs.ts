@@ -7,7 +7,7 @@ export const LogLevelSchema = z
 export type LogLevel = z.infer<typeof LogLevelSchema>;
 
 export const LogKVSchema = z.record(
-  z.union([z.string(), z.number(), z.boolean()]),
+  z.union([z.string(), z.number(), z.boolean()]).optional(),
 );
 export type LogKV = z.infer<typeof LogKVSchema>;
 
@@ -85,6 +85,7 @@ export const endpoint: Endpoint<typeof schema> = {
               ...l.kv,
               msg: l.message,
             })
+              .filter(([_, v]) => v !== undefined) // Leave null values untouched
               .map(([k, v]) => {
                 if (typeof v === "string") return `${k}="${v}"`;
                 return `${k}=${v}`;

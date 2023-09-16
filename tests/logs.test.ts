@@ -285,6 +285,43 @@ test("with both kv", async () => {
   });
 });
 
+test('with undefined kv values', async () => {
+  const res = await logs
+    .ship(
+      {
+        success: true,
+        data: {
+          service: "blob-city",
+          environment: "production",
+          kv: { common: undefined },
+          logs: [
+            {
+              level: "info",
+              timestamp: { p: "ns", v: "001" },
+              message: "Incoming request",
+              kv: { line: undefined },
+            },
+          ],
+        },
+      },
+      env,
+    )
+    .then((r) => r.json());
+
+  expect(res).toStrictEqual({
+    streams: [
+      {
+        stream: {
+          environment: "production",
+          service: "blob-city",
+          level: "info",
+        },
+        values: [["001", 'msg="Incoming request"']],
+      },
+    ],
+  });
+})
+
 test("multiple logs", async () => {
   const res = await logs
     .ship(

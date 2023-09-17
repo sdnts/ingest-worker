@@ -44,8 +44,8 @@ test("shipping error logs", async () => {
   expect(streams[0]).toHaveProperty("values");
 
   expect(streams[0].stream).toStrictEqual({
-    environment: "production",
     service: "ingest-worker",
+    environment: "production",
   });
   expect(streams[0].values).toHaveLength(1);
   expect(streams[0].values[0]).toHaveLength(2);
@@ -83,8 +83,8 @@ test("extra log when outcome is not ok", async () => {
     streams: [
       {
         stream: {
-          environment: "production",
           service: "blob-city-api",
+          environment: "production",
         },
         values: [
           [
@@ -140,8 +140,8 @@ test("script logs", async () => {
     streams: [
       {
         stream: {
-          environment: "production",
           service: "blob-city-api",
+          environment: "production",
         },
         values: [
           ["1000000", 'level="info" message="log1"'],
@@ -194,8 +194,8 @@ test("script exceptions", async () => {
     streams: [
       {
         stream: {
-          environment: "production",
           service: "blob-city-api",
+          environment: "production",
         },
         values: [
           ["1000000", 'level="error" message="exception1"'],
@@ -265,8 +265,8 @@ test("event batch", async () => {
     streams: [
       {
         stream: {
-          environment: "production",
           service: "blob-city-api",
+          environment: "production",
         },
         values: [
           ["1000000", 'level="info" message="log1"'],
@@ -279,8 +279,8 @@ test("event batch", async () => {
     streams: [
       {
         stream: {
-          environment: "production",
           service: "blob-city-api",
+          environment: "production",
         },
         values: [["3000000", 'level="error" message="exception1"']],
       },

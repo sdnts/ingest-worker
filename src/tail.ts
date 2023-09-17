@@ -19,14 +19,14 @@ export const tail = async (
       if (!e.eventTimestamp) throw new Error("Missing eventTimestamp");
       if (!e.event) throw new Error("Missing event");
 
-      const l: Log[] = [
+      const lines: Log[] = [
         ...e.logs.map((l) => {
           // Log discipline / protocol:
           // To allow for useful Kvs and messages, logs are allowed in two "formats":
           // 1. Message-only mode: `console.log("Some string", extra-params)`
           // 2. KV+Message mode: `console.log({ foo: "bar" }, "Some string", extra-params)`
-          let message;
-          let kv;
+          let message: string;
+          let kv: LogKV;
           if (typeof l.message[0] === "object") {
             // KV + Message mode
             kv = Object.entries(l.message[0]).reduce((o, [k, v]) => {
@@ -62,7 +62,7 @@ export const tail = async (
 
       if (e.outcome !== "ok") {
         if ("request" in e.event) {
-          l.push({
+          lines.push({
             level: "fatal",
             timestamp: { p: "ms", v: e.eventTimestamp.toString() },
             kv: { outcome: e.outcome },
@@ -77,13 +77,13 @@ export const tail = async (
         }
       }
 
-      return logs.ship!(
+      return logs.ship(
         {
           success: true,
           data: {
-            environment: "production" as const,
             service: e.scriptName,
-            logs: l,
+            environment: "production",
+            logs: lines,
           },
         },
         env,

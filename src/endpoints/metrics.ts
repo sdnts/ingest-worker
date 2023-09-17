@@ -33,7 +33,7 @@ const schema = z
 export const endpoint: Endpoint<typeof schema> = {
   path: "/m",
   schema,
-  ship: async ({ data: params }, env) => {
+  ship: async (params, env) => {
     // Tags are indexed by InfluxDB, fields are not
     // Use tags sparingly, for data that has a known set of possible values
 

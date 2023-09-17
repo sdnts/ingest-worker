@@ -52,10 +52,10 @@ export const endpoint: Endpoint<typeof schema> = {
       streams: [
         {
           stream: {
-            environment: params.data.environment,
-            service: params.data.service,
+            environment: params.environment,
+            service: params.service,
           },
-          values: params.data.logs.map((l) => {
+          values: params.logs.map((l) => {
             // Loki wants timestamps in nanoseconds
             if (l.timestamp.p === "ms")
               l.timestamp.v = `${l.timestamp.v}000000`;
@@ -72,7 +72,7 @@ export const endpoint: Endpoint<typeof schema> = {
 
             const line = Object.entries({
               level: l.level,
-              ...params.data.kv,
+              ...params.kv,
               ...l.kv,
               message: l.message,
             })

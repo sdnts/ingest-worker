@@ -79,12 +79,9 @@ export const tail = async (
 
       return logs.ship(
         {
-          success: true,
-          data: {
-            service: e.scriptName,
-            environment: "production",
-            logs: lines,
-          },
+          service: e.scriptName,
+          environment: "production",
+          logs: lines,
         },
         env,
       );
@@ -96,19 +93,16 @@ export const tail = async (
     try {
       return logs.ship!(
         {
-          success: true,
-          data: {
-            environment: "production",
-            service: "ingest-worker",
-            logs: [
-              {
-                level: "fatal",
-                timestamp: { p: "ms", v: Date.now().toString() },
-                message: (e as Error).message,
-                kv: { name: (e as Error).name, stack: (e as Error).stack },
-              },
-            ],
-          },
+          environment: "production",
+          service: "ingest-worker",
+          logs: [
+            {
+              level: "fatal",
+              timestamp: { p: "ms", v: Date.now().toString() },
+              message: (e as Error).message,
+              kv: { name: (e as Error).name, stack: (e as Error).stack },
+            },
+          ],
         },
         env,
       ).then((r) => [r]);
@@ -116,18 +110,15 @@ export const tail = async (
       // Error during error handling, this next statement must not throw
       return logs.ship!(
         {
-          success: true,
-          data: {
-            environment: "production",
-            service: "ingest-worker",
-            logs: [
-              {
-                level: "fatal",
-                timestamp: { p: "ms", v: Date.now().toString() },
-                message: "An error occured while handling a log shipping error",
-              },
-            ],
-          },
+          environment: "production",
+          service: "ingest-worker",
+          logs: [
+            {
+              level: "fatal",
+              timestamp: { p: "ms", v: Date.now().toString() },
+              message: "An error occured while handling a log shipping error",
+            },
+          ],
         },
         env,
       ).then((r) => [r]);

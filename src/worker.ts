@@ -1,8 +1,10 @@
+import { ZodSchema } from "zod";
 import { endpoint as analytics } from "./endpoints/analytics";
 import { endpoint as logs } from "./endpoints/logs";
 import { endpoint as metrics } from "./endpoints/metrics";
 import { endpoint as ping } from "./endpoints/ping";
 import { endpoint as traces } from "./endpoints/traces";
+import { Endpoint } from "./endpoints/types";
 import { tail } from "./tail";
 
 export interface Env {
@@ -58,13 +60,9 @@ export default {
     if (!params.success) return new Response("Bad data", { status: 400 });
 
     ctx.waitUntil(
-      endpoint.ship(
-        // Params across schemas do not have an overlap, not sure how to make
-        // TS infer the correct type here
-        params as any,
-        env,
-        request,
-      ),
+      // Params across schemas do not have an overlap, not sure how to make
+      // TS infer the correct type here (try removing the `as any` here)
+      (endpoint.ship as any)(params.data, env, request),
     );
 
     return new Response(null, {
@@ -88,24 +86,21 @@ export default {
     ctx.waitUntil(
       logs.ship(
         {
-          success: true,
-          data: {
-            environment: "production",
-            service: "ingest-worker",
-            logs: [
-              {
-                level: "info",
-                timestamp: { p: "ms", v: Date.now().toString() },
-                kv: {
-                  events: events.length,
-                  services: Array.from(
-                    new Set(events.map((e) => e.scriptName)),
-                  ).join(","),
-                },
-                message: "Received tail event",
+          environment: "production",
+          service: "ingest-worker",
+          logs: [
+            {
+              level: "info",
+              timestamp: { p: "ms", v: Date.now().toString() },
+              kv: {
+                events: events.length,
+                services: Array.from(
+                  new Set(events.map((e) => e.scriptName)),
+                ).join(","),
               },
-            ],
-          },
+              message: "Received tail event",
+            },
+          ],
         },
         env,
       ),

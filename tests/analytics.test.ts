@@ -8,12 +8,9 @@ test("service calculation", async () => {
   const response = await analytics
     .ship(
       {
-        success: true,
-        data: {
-          name: "page_view",
-          environment: "production",
-          path: "/random",
-        },
+        name: "page_view",
+        environment: "production",
+        path: "/random",
       },
       env,
       new Request("https://in.sdnts.dev/a", {
@@ -37,12 +34,9 @@ test("visitor uniqueness", async () => {
   let res = await analytics
     .ship(
       {
-        success: true,
-        data: {
-          environment: "production",
-          name: "page_view",
-          path: "/",
-        },
+        environment: "production",
+        name: "page_view",
+        path: "/",
       },
       env,
       new Request("https://in.sdnts.dev/a", {
@@ -64,12 +58,9 @@ test("visitor uniqueness", async () => {
   res = await analytics
     .ship(
       {
-        success: true,
-        data: {
-          environment: "production",
-          name: "page_view",
-          path: "/",
-        },
+        environment: "production",
+        name: "page_view",
+        path: "/",
       },
       env,
       new Request("https://in.sdnts.dev/a", {
@@ -91,12 +82,9 @@ test("visitor uniqueness", async () => {
   res = await analytics
     .ship(
       {
-        success: true,
-        data: {
-          environment: "production",
-          name: "page_view",
-          path: "/sse",
-        },
+        environment: "production",
+        name: "page_view",
+        path: "/sse",
       },
       env,
       new Request("https://in.sdnts.dev/a", {
@@ -115,12 +103,9 @@ test("visitor uniqueness", async () => {
   res = await analytics
     .ship(
       {
-        success: true,
-        data: {
-          environment: "production",
-          name: "page_view",
-          path: "/cors",
-        },
+        environment: "production",
+        name: "page_view",
+        path: "/cors",
       },
       env,
       new Request("https://in.sdnts.dev/a", {

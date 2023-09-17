@@ -6,19 +6,16 @@ test("request metric", async () => {
   const res = await metrics
     .ship(
       {
-        success: true,
-        data: {
-          name: "request",
-          service: "blob-city",
-          environment: "production",
-          path: "/tunnel",
-          status: 101,
-          method: "PUT",
-          fields: {
-            rayId: "abcd",
-            tunnelId: "1234",
-            peerId: "1",
-          },
+        name: "request",
+        service: "blob-city",
+        environment: "production",
+        path: "/tunnel",
+        status: 101,
+        method: "PUT",
+        fields: {
+          rayId: "abcd",
+          tunnelId: "1234",
+          peerId: "1",
         },
       },
       env,

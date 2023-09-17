@@ -5,6 +5,18 @@ on:
       - main
 
 jobs:
+  types:
+    name: Check Types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: "yarn"
+      - run: yarn
+      - run: yarn types
+
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -20,6 +32,7 @@ jobs:
   deploy:
     name: Deploy
     needs:
+      - types
       - test
     runs-on: ubuntu-latest
     environment: Production

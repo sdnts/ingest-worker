@@ -13,6 +13,7 @@
   },
   "scripts": {
     "dev": "wrangler dev",
-    "test": "vitest"
+    "test": "vitest",
+    "types": "tsc"
   }
 }

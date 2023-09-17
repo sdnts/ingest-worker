@@ -2,9 +2,59 @@ import { expect, test, vi } from "vitest";
 import { tail } from "../src/tail";
 import { env } from "./setup";
 
+test("ingest-worker logs", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(1);
+
+  const response = await tail(
+    [
+      {
+        scriptName: "blob-city-api",
+        exceptions: [],
+        logs: [],
+        outcome: "ok",
+        event: {
+          request: {
+            url: "https://api.blob.city/tunnel",
+            method: "GET",
+          },
+          response: { status: 101 },
+        },
+        eventTimestamp: 1,
+        diagnosticsChannelEvents: [],
+      },
+    ],
+    env,
+  ).then((r) => Promise.all(r.map((r) => r.json())));
+
+  vi.useRealTimers();
+
+  expect(response).toHaveLength(2);
+  expect(response[1]).toStrictEqual({
+    streams: [
+      {
+        stream: {
+          service: "ingest-worker",
+          environment: "production",
+        },
+        values: [
+          [
+            "1000000",
+            'level="debug" logCount=0 exceptionCount=0 scriptName="blob-city-api" eventTimestamp=1 outcome="ok" message="Processing event"',
+          ],
+          ["1000000", 'level="debug" lineCount=0 message="Lines ready"'],
+        ],
+      },
+    ],
+  });
+});
+
 test("no events", async () => {
-  const response = await tail([], env);
-  expect(response).toHaveLength(0);
+  const response = await tail([], env).then((r) =>
+    Promise.all(r.map((r) => r.json())),
+  );
+
+  expect(response).toHaveLength(1); // Includes 1 extra Response for ingest-worker logs that we won't assert here
 });
 
 test("shipping error logs", async () => {
@@ -32,6 +82,8 @@ test("shipping error logs", async () => {
     env,
   ).then((r) => Promise.all(r.map((r) => r.json())));
 
+  vi.useRealTimers();
+
   expect(response).toHaveLength(1);
 
   // Can't use .toStrictEqual here because of the stacktrace
@@ -53,8 +105,6 @@ test("shipping error logs", async () => {
   expect(streams[0].values[0][1]).toMatch(
     /level="fatal" name="Error" stack="Error: Missing scriptName(.|\n)*" message="Missing scriptName"/,
   );
-
-  vi.useRealTimers();
 });
 
 test("extra log when outcome is not ok", async () => {
@@ -78,7 +128,7 @@ test("extra log when outcome is not ok", async () => {
     env,
   ).then((r) => Promise.all(r.map((r) => r.json())));
 
-  expect(response).toHaveLength(1);
+  expect(response).toHaveLength(2); // Includes 1 extra Response for ingest-worker logs that we won't assert here
   expect(response[0]).toStrictEqual({
     streams: [
       {
@@ -135,7 +185,7 @@ test("script logs", async () => {
     env,
   ).then((r) => Promise.all(r.map((r) => r.json())));
 
-  expect(response).toHaveLength(1);
+  expect(response).toHaveLength(2); // Includes 1 extra Response for ingest-worker logs that we won't assert here
   expect(response[0]).toStrictEqual({
     streams: [
       {
@@ -189,7 +239,7 @@ test("script exceptions", async () => {
     env,
   ).then((r) => Promise.all(r.map((r) => r.json())));
 
-  expect(response).toHaveLength(1);
+  expect(response).toHaveLength(2); // Includes 1 extra Response for ingest-worker logs that we won't assert here
   expect(response[0]).toStrictEqual({
     streams: [
       {
@@ -260,7 +310,7 @@ test("event batch", async () => {
     env,
   ).then((r) => Promise.all(r.map((r) => r.json())));
 
-  expect(response).toHaveLength(2);
+  expect(response).toHaveLength(3); // Includes 1 extra Response for ingest-worker logs that we won't assert here
   expect(response[0]).toStrictEqual({
     streams: [
       {

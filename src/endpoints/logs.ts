@@ -26,6 +26,11 @@ export const LogSchema = z.object({
 });
 export type Log = z.infer<typeof LogSchema>;
 
+type LogStream = {
+  stream: LogKV;
+  values: [string, string];
+};
+
 const schema = z.object({
   // A unique identifier for the service sending logs
   service: z.string(),
@@ -47,6 +52,8 @@ export const endpoint: Endpoint<typeof schema> = {
 
     // Serialize logs to the Loki log entry format
     // https://grafana.com/docs/loki/latest/reference/api/#push-log-entries-to-loki
+
+    const streams: LogStream[] = [];
 
     const body = JSON.stringify({
       streams: [

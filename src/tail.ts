@@ -10,10 +10,26 @@ export const tail = async (
   events: TraceItem[],
   env: Env,
 ): Promise<Response[]> => {
+  const now = Date.now().toString();
+  const ingestWorkerLogs: Log[] = []; // Collect our own logs so we can attach an extra shipment to Loki
+
   try {
     // Tail events can be batched, so break that open first
     const shipments = events.map((e) => {
       // `e` represents a single Worker invocation
+
+      ingestWorkerLogs.push({
+        level: "debug",
+        timestamp: { p: "ms", v: now },
+        message: "Processing event",
+        kv: {
+          logCount: e.logs.length,
+          exceptionCount: e.exceptions.length,
+          scriptName: e.scriptName ?? undefined,
+          eventTimestamp: e.eventTimestamp ?? undefined,
+          outcome: e.outcome,
+        },
+      });
 
       if (!e.scriptName) throw new Error("Missing scriptName");
       if (!e.eventTimestamp) throw new Error("Missing eventTimestamp");
@@ -77,6 +93,15 @@ export const tail = async (
         }
       }
 
+      ingestWorkerLogs.push({
+        level: "debug",
+        timestamp: { p: "ms", v: now },
+        message: "Lines ready",
+        kv: {
+          lineCount: lines.length,
+        },
+      });
+
       return logs.ship(
         {
           service: e.scriptName,
@@ -87,41 +112,55 @@ export const tail = async (
       );
     });
 
-    return Promise.all(shipments);
+    return Promise.all([
+      ...shipments,
+      logs.ship(
+        {
+          service: "ingest-worker",
+          environment: "production",
+          logs: ingestWorkerLogs,
+        },
+        env,
+      ),
+    ]);
   } catch (e) {
     // Log shipping error, let Loki know so we can alert
     try {
-      return logs.ship!(
-        {
-          environment: "production",
-          service: "ingest-worker",
-          logs: [
-            {
-              level: "fatal",
-              timestamp: { p: "ms", v: Date.now().toString() },
-              message: (e as Error).message,
-              kv: { name: (e as Error).name, stack: (e as Error).stack },
-            },
-          ],
-        },
-        env,
-      ).then((r) => [r]);
+      return logs
+        .ship(
+          {
+            environment: "production",
+            service: "ingest-worker",
+            logs: [
+              {
+                level: "fatal",
+                timestamp: { p: "ms", v: Date.now().toString() },
+                message: (e as Error).message,
+                kv: { name: (e as Error).name, stack: (e as Error).stack },
+              },
+            ],
+          },
+          env,
+        )
+        .then((r) => [r]);
     } catch (e) {
       // Error during error handling, this next statement must not throw
-      return logs.ship!(
-        {
-          environment: "production",
-          service: "ingest-worker",
-          logs: [
-            {
-              level: "fatal",
-              timestamp: { p: "ms", v: Date.now().toString() },
-              message: "An error occured while handling a log shipping error",
-            },
-          ],
-        },
-        env,
-      ).then((r) => [r]);
+      return logs
+        .ship(
+          {
+            environment: "production",
+            service: "ingest-worker",
+            logs: [
+              {
+                level: "fatal",
+                timestamp: { p: "ms", v: Date.now().toString() },
+                message: "An error occured while handling a log shipping error",
+              },
+            ],
+          },
+          env,
+        )
+        .then((r) => [r]);
     }
   }
 };

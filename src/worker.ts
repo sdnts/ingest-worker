@@ -1,10 +1,8 @@
-import { ZodSchema } from "zod";
 import { endpoint as analytics } from "./endpoints/analytics";
 import { endpoint as logs } from "./endpoints/logs";
 import { endpoint as metrics } from "./endpoints/metrics";
 import { endpoint as ping } from "./endpoints/ping";
 import { endpoint as traces } from "./endpoints/traces";
-import { Endpoint } from "./endpoints/types";
 import { tail } from "./tail";
 
 export interface Env {
@@ -80,7 +78,7 @@ export default {
     ctx: Pick<ExecutionContext, "waitUntil">,
   ) {
     // CAVEAT:
-    // Because this Worker is a tail consumer, it cannot currently be tailed itself.
+    // Logs produced during this `tail` event cannot be tailed.
     // We can get around this by talking to Loki directly when we want to log.
 
     ctx.waitUntil(

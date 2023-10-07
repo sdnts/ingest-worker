@@ -1,7 +1,7 @@
 # ingest-worker
 
 This Worker is custom infrastructure that I use to paper over gaps in Cloudflare
-Workers' observability story, which is pretty immuature at the moment in my opinion.
+Workers' observability story.
 
 There isn't an easy way to record metrics or logs and query them without having
 to subscribe to third-party SaaS. Apart from being expensive, most of these nullify
@@ -12,15 +12,16 @@ where the SaaS is hosted.
 
 This Worker acts as a proxy to a VPS on [Hetzner](https://www.hetzner.com/) that
 runs:
+
 1. [InfluxDB](https://www.influxdata.com/) (a time-series database that I use
-for recording metrics)
+   for recording metrics)
 2. [Telegraf](https://www.influxdata.com/time-series-platform/telegraf/) (a
-generic agent that I use to record metrics about the VPS itself and push them to
-InfluxDB. This Worker also talks to Telegraf instead of InfluxDB directly)
+   generic agent that I use to record metrics about the VPS itself and push them to
+   InfluxDB. This Worker also talks to Telegraf instead of InfluxDB directly)
 3. [Grafana Loki](https://grafana.com/docs/loki/latest/) (A log aggregation
-system that I use for recording logs)
+   system that I use for recording logs)
 4. [Grafana Tempo](https://grafana.com/docs/tempo/latest/) (A distributed
-tracing backend that I use for recording traces)
+   tracing backend that I use for recording traces)
 
 ### Why
 
@@ -46,8 +47,8 @@ as doing a `console.log` in the service.
 ### Future
 
 Configuration and maintenance of InfluxDB, Telegraf, Loki & Tempo are currently
-done ad-hoc, manually by me. In the future I'd like to wrap all that up in a 
-container to make this setup portable.
+done ad-hoc, manually by me. In the future I'd like to wrap all that up in
+containers to make this setup portable.
 
 If anyone reading this is interested in replicating this setup for themselves,
 please reach out (or open an issue)!

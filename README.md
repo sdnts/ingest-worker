@@ -8,6 +8,20 @@ to subscribe to third-party SaaS. Apart from being expensive, most of these null
 the point of running services on the Edge by having to talk to a central server
 where the SaaS is hosted.
 
+### Usage
+
+Add this to any Worker you want to log from:
+
+```toml
+# wrangler.toml
+
+[[tail_consumers]]
+service = 'ingest-worker'
+```
+
+All `console.*` logs will end up in Loki with the `service` tag set to the Worker
+name. Query them with `{ service="worker-name" } | logfmt`
+
 ### What
 
 This Worker acts as a proxy to a VPS on [Hetzner](https://www.hetzner.com/) that

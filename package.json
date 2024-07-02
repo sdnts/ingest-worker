@@ -3,13 +3,13 @@
   "packageManager": "yarn@4.3.1",
   "devDependencies": {
     "@cloudflare/workers-types": "4.20240620.0",
-    "happy-dom": "12.0.1",
-    "typescript": "5.2.2",
-    "vitest": "0.34.4",
+    "happy-dom": "12.10.3",
+    "typescript": "5.5.3",
+    "vitest": "0.34.6",
     "wrangler": "3.62.0"
   },
   "dependencies": {
-    "zod": "3.22.2"
+    "zod": "3.23.8"
   },
   "scripts": {
     "dev": "wrangler dev",

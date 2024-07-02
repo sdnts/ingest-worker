@@ -10,9 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - run: corepack enable
       - uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 20
           cache: "yarn"
       - run: yarn
       - run: yarn types
@@ -22,9 +23,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - run: corepack enable
       - uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 20
           cache: "yarn"
       - run: yarn
       - run: yarn test
@@ -38,9 +40,10 @@ jobs:
     environment: Production
     steps:
       - uses: actions/checkout@v3
+      - run: corepack enable
       - uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 20
           cache: "yarn"
       - run: yarn
       - run: yarn wrangler deploy

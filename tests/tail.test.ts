@@ -40,9 +40,9 @@ test("ingest-worker logs", async () => {
         values: [
           [
             "1000000",
-            'level="debug" logCount=0 exceptionCount=0 scriptName="blob-city-api" eventTimestamp=1 outcome="ok" message="Processing event"',
+            'message="Processing event" logCount=0 exceptionCount=0 scriptName="blob-city-api" eventTimestamp=1 outcome="ok" level="debug"',
           ],
-          ["1000000", 'level="debug" lineCount=0 message="Lines ready"'],
+          ["1000000", 'message="Lines ready" lineCount=0 level="debug"'],
         ],
       },
     ],
@@ -103,7 +103,7 @@ test("shipping error logs", async () => {
   expect(streams[0].values[0]).toHaveLength(2);
   expect(streams[0].values[0][0]).toBe("1000000");
   expect(streams[0].values[0][1]).toMatch(
-    /level="fatal" name="Error" stack="Error: Missing scriptName(.|\n)*" message="Missing scriptName"/,
+    /message="Missing scriptName" name="Error" stack="Error: Missing scriptName(.|\n)*" level="fatal"/,
   );
 });
 
@@ -139,7 +139,7 @@ test("extra log when outcome is not ok", async () => {
         values: [
           [
             "1000000",
-            'level="fatal" outcome="cpuExceeded" message="Fatal outcome"',
+            'message="Fatal outcome" outcome="cpuExceeded" level="fatal"',
           ],
         ],
       },
@@ -194,12 +194,12 @@ test("script logs", async () => {
           environment: "production",
         },
         values: [
-          ["1000000", 'level="info" message="log1"'],
+          ["1000000", 'message="log1" level="info"'],
           [
             "2000000",
-            'level="warn" a="b" c=9 d=false message="log2 extra params"',
+            'message="log2 extra params" a="b" c=9 d=false level="warn"',
           ],
-          ["3000000", 'level="fatal" message="log3 extra params"'],
+          ["3000000", 'message="log3 extra params" level="fatal"'],
         ],
       },
     ],
@@ -248,8 +248,8 @@ test("script exceptions", async () => {
           environment: "production",
         },
         values: [
-          ["1000000", 'level="error" message="exception1"'],
-          ["2000000", 'level="error" message="exception2"'],
+          ["1000000", 'message="exception1" level="error"'],
+          ["2000000", 'message="exception2" level="error"'],
         ],
       },
     ],
@@ -319,8 +319,8 @@ test("event batch", async () => {
           environment: "production",
         },
         values: [
-          ["1000000", 'level="info" message="log1"'],
-          ["2000000", 'level="warn" message="log2"'],
+          ["1000000", 'message="log1" level="info"'],
+          ["2000000", 'message="log2" level="warn"'],
         ],
       },
     ],
@@ -332,7 +332,7 @@ test("event batch", async () => {
           service: "blob-city-api",
           environment: "production",
         },
-        values: [["3000000", 'level="error" message="exception1"']],
+        values: [["3000000", 'message="exception1" level="error"']],
       },
     ],
   });

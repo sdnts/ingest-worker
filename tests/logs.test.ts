@@ -27,7 +27,7 @@ test("with environment", async () => {
           environment: "staging",
           service: "blob-city",
         },
-        values: [["001", 'level="info" message="Incoming request"']],
+        values: [["001", 'message="Incoming request" level="info"']],
       },
     ],
   });
@@ -58,7 +58,7 @@ test("with level", async () => {
           environment: "production",
           service: "blob-city",
         },
-        values: [["001", 'level="fatal" message="Incoming request"']],
+        values: [["001", 'message="Incoming request" level="fatal"']],
       },
     ],
   });
@@ -89,7 +89,7 @@ test("with ms precision", async () => {
           environment: "production",
           service: "blob-city",
         },
-        values: [["001000000", 'level="info" message="Incoming request"']],
+        values: [["001000000", 'message="Incoming request" level="info"']],
       },
     ],
   });
@@ -119,7 +119,7 @@ test("with ns precision", async () => {
           environment: "production",
           service: "blob-city",
         },
-        values: [["001", 'level="info" message="Incoming request"']],
+        values: [["001", 'message="Incoming request" level="info"']],
       },
     ],
   });
@@ -150,7 +150,7 @@ test("without kv", async () => {
           environment: "production",
           service: "blob-city",
         },
-        values: [["001", 'level="info" message="Incoming request"']],
+        values: [["001", 'message="Incoming request" level="info"']],
       },
     ],
   });
@@ -183,7 +183,7 @@ test("with line kv", async () => {
           service: "blob-city",
         },
         values: [
-          ["001", 'level="info" method="GET" message="Incoming request"'],
+          ["001", 'message="Incoming request" method="GET" level="info"'],
         ],
       },
     ],
@@ -217,7 +217,7 @@ test("with common kv", async () => {
           service: "blob-city",
         },
         values: [
-          ["001", 'level="info" rayId="1234" message="Incoming request"'],
+          ["001", 'message="Incoming request" rayId="1234" level="info"'],
         ],
       },
     ],
@@ -254,7 +254,7 @@ test("with both kv", async () => {
         values: [
           [
             "001",
-            'level="info" rayId="1234" method="GET" message="Incoming request"',
+            'message="Incoming request" rayId="1234" method="GET" level="info"',
           ],
         ],
       },
@@ -289,7 +289,7 @@ test("with undefined kv values", async () => {
           environment: "production",
           service: "blob-city",
         },
-        values: [["001", 'level="info" message="Incoming request"']],
+        values: [["001", 'message="Incoming request" level="info"']],
       },
     ],
   });
@@ -373,17 +373,17 @@ test("multiple logs", async () => {
         values: [
           [
             "001",
-            'level="info" rayId="abcd" method="GET" path="/tunnel" message="Incoming request"',
+            'message="Incoming request" rayId="abcd" method="GET" path="/tunnel" level="info"',
           ],
           [
             "002",
-            'level="debug" rayId="abcd" tunnelId="1234" message="Forwarding to DO"',
+            'message="Forwarding to DO" rayId="abcd" tunnelId="1234" level="debug"',
           ],
           [
             "003000000",
-            'level="trace" rayId="abcd" message="Creating WebSocketPair"',
+            'message="Creating WebSocketPair" rayId="abcd" level="trace"',
           ],
-          ["004", 'level="info" rayId="abcd" status=200 message="Response"'],
+          ["004", 'message="Response" rayId="abcd" status=200 level="info"'],
         ],
       },
     ],

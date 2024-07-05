@@ -78,10 +78,10 @@ export const endpoint: Endpoint<typeof schema> = {
             // TODO: We should just use structured metadata once it lands as stable
 
             const line = Object.entries({
-              level: l.level,
+              message: l.message,
               ...params.kv,
               ...l.kv,
-              message: l.message,
+              level: l.level,
             })
               .filter(([_, v]) => v !== undefined) // Leave null values untouched
               .map(([k, v]) => {
